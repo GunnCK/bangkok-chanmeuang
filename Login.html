@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login - Bangkok Chanmeuang</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- SweetAlert2 สำหรับแจ้งเตือนแบบ Pop-up -->
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700&display=swap" rel="stylesheet">
+    
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        navy: { DEFAULT: '#111d2e', light: '#1e2f47' },
+                        gold: { DEFAULT: '#b89247', light: '#cfa85e', hover: '#a07d39' }
+                    }
+                }
+            }
+        }
+    </script>
+    
+    <style>
+        body { font-family: 'Prompt', sans-serif; background-color: #f3f4f6; }
+        .font-logo { font-family: 'Playfair Display', serif; }
+        
+        .login-bg {
+            background-color: #111d2e;
+            background-image: radial-gradient(circle at top right, #1e2f47, #111d2e);
+        }
+    </style>
+</head>
+<body class="flex items-center justify-center min-h-screen login-bg relative overflow-hidden">
+
+    <!-- Decorative background elements -->
+    <div class="absolute top-[-10%] left-[-10%] w-96 h-96 bg-gold/5 rounded-full blur-3xl"></div>
+    <div class="absolute bottom-[-10%] right-[-5%] w-80 h-80 bg-blue-500/10 rounded-full blur-3xl"></div>
+
+    <div class="w-full max-w-md p-8 m-4 bg-white rounded-2xl shadow-2xl relative overflow-hidden z-10 border border-gray-100">
+        <!-- Decoration Line -->
+        <div class="absolute top-0 left-0 w-full h-2 bg-gradient-to-r from-gold-light via-gold to-gold-hover"></div>
+        
+        <!-- Logo Section -->
+        <div class="flex flex-col items-center justify-center mb-8 mt-2">
+            <img src="https://lh3.googleusercontent.com/d/12hJFK7AYOuvL3xHFGhmeRyMv2uS8159J" alt="Logo" class="h-24 w-auto object-contain rounded-xl bg-gray-50 p-3 shadow-inner border border-gray-100 mb-5" onerror="this.onerror=null; this.src='https://drive.google.com/thumbnail?id=12hJFK7AYOuvL3xHFGhmeRyMv2uS8159J&sz=w500';">
+            
+            <div class="flex flex-col items-center text-center">
+                <span class="text-3xl font-logo font-bold tracking-[0.1em] text-navy uppercase leading-none drop-shadow-sm">Bangkok</span>
+                <span class="text-xs font-bold tracking-[0.25em] text-gold uppercase mt-2">Chanmeuang</span>
+            </div>
+            <p class="text-gray-400 text-xs mt-4 font-medium tracking-wide">ระบบจัดการฐานข้อมูลอสังหาริมทรัพย์</p>
+        </div>
+
+        <!-- Login Form -->
+        <form id="login-form" onsubmit="handleLogin(event)">
+            <div class="mb-5">
+                <label for="username" class="block text-sm font-semibold text-navy mb-2"><i class="fa-solid fa-user text-gold mr-1.5"></i> ชื่อผู้ใช้งาน (Username)</label>
+                <input type="text" id="username" required class="w-full border border-gray-300 rounded-lg p-3 text-gray-700 outline-none focus:ring-2 focus:ring-gold/50 focus:border-gold transition shadow-sm bg-gray-50 focus:bg-white placeholder-gray-400" placeholder="กรอกชื่อผู้ใช้งาน...">
+            </div>
+            
+            <div class="mb-8">
+                <label for="password" class="block text-sm font-semibold text-navy mb-2"><i class="fa-solid fa-lock text-gold mr-1.5"></i> รหัสผ่าน (Password)</label>
+                <div class="relative">
+                    <input type="password" id="password" required class="w-full border border-gray-300 rounded-lg p-3 text-gray-700 outline-none focus:ring-2 focus:ring-gold/50 focus:border-gold transition shadow-sm bg-gray-50 focus:bg-white placeholder-gray-400" placeholder="กรอกรหัสผ่าน...">
+                    <button type="button" onclick="togglePassword()" class="absolute inset-y-0 right-0 pr-4 flex items-center text-gray-400 hover:text-gold transition focus:outline-none">
+                        <i class="fa-solid fa-eye" id="toggle-icon"></i>
+                    </button>
+                </div>
+            </div>
+
+            <button type="submit" id="btn-login" class="w-full bg-navy hover:bg-navy-light text-white font-semibold py-3 px-4 rounded-lg shadow-md hover:shadow-lg transition-all duration-300 flex justify-center items-center group">
+                <span class="tracking-wide">เข้าสู่ระบบ</span> 
+                <i class="fa-solid fa-arrow-right-to-bracket ml-2 transform group-hover:translate-x-1 transition-transform"></i>
+            </button>
+        </form>
+
+        <!-- Admin Shortcut -->
+        <div id="admin-panel" class="hidden mt-6 text-center border-t border-gray-100 pt-4">
+            <button type="button" onclick="goUserManagement()" class="text-navy hover:text-gold font-bold text-sm transition-colors flex items-center justify-center w-full">
+                <i class="fa-solid fa-users-gear mr-2"></i> ไปหน้าจัดการผู้ใช้งาน (เพิ่ม/แก้ไข User)
+            </button>
+        </div>
+        
+        <!-- Loading State (Hidden by default) -->
+        <div id="loading" class="hidden absolute inset-0 bg-white/90 backdrop-blur-sm flex flex-col items-center justify-center z-20">
+            <div class="w-12 h-12 border-4 border-gray-200 border-t-gold rounded-full animate-spin mb-4 shadow-sm"></div>
+            <p class="text-navy font-semibold tracking-wide animate-pulse">กำลังตรวจสอบข้อมูล...</p>
+        </div>
+    </div>
+
+    <script>
+        // เช็คสถานะตอนโหลดหน้าจอ
+        document.addEventListener('DOMContentLoaded', () => {
+            if (sessionStorage.getItem('userRole') === 'System Admin') {
+                document.getElementById('admin-panel').classList.remove('hidden');
+            }
+        });
+
+        // ฟังก์ชันไปหน้าจัดการผู้ใช้งาน
+        function goUserManagement() {
+            document.getElementById('loading').classList.remove('hidden');
+            document.querySelector('#loading p').innerText = 'กำลังพาไปหน้าจัดการผู้ใช้งาน...';
+            
+            if (typeof google !== 'undefined') {
+                google.script.run.withSuccessHandler(function(url) {
+                    window.top.location.href = url + '?page=UserManagement';
+                }).getWebAppUrl();
+            }
+        }
+
+        // ฟังก์ชันสำหรับแสดง/ซ่อน รหัสผ่าน
+        function togglePassword() {
+            const pwdInput = document.getElementById('password');
+            const icon = document.getElementById('toggle-icon');
+            if (pwdInput.type === 'password') {
+                pwdInput.type = 'text';
+                icon.classList.remove('fa-eye');
+                icon.classList.add('fa-eye-slash');
+            } else {
+                pwdInput.type = 'password';
+                icon.classList.remove('fa-eye-slash');
+                icon.classList.add('fa-eye');
+            }
+        }
+
+        // จัดการเมื่อกดปุ่ม Submit ฟอร์ม
+        function handleLogin(event) {
+            event.preventDefault(); // ป้องกันหน้าเว็บรีเฟรช
+            
+            const user = document.getElementById('username').value.trim();
+            const pass = document.getElementById('password').value;
+            
+            if (!user || !pass) return;
+
+            document.getElementById('loading').classList.remove('hidden');
+
+            // เรียกใช้ฟังก์ชันตรวจสอบฝั่ง Apps Script Backend
+            if (typeof google !== 'undefined') {
+                google.script.run
+                    .withSuccessHandler(function(response) {
+                        document.getElementById('loading').classList.add('hidden');
+                        
+                        if (response.success) {
+                            // เก็บสถานะการล็อกอินไว้ใน Session Storage
+                            sessionStorage.setItem('isLoggedIn', 'true');
+                            sessionStorage.setItem('userName', response.name);
+                            sessionStorage.setItem('userRole', response.role);
+                            sessionStorage.setItem('username', response.username);
+                            
+                            Swal.fire({
+                                icon: 'success',
+                                title: 'เข้าสู่ระบบสำเร็จ',
+                                text: 'ยินดีต้อนรับคุณ ' + response.name,
+                                confirmButtonColor: '#b89247',
+                                timer: 1500,
+                                showConfirmButton: false,
+                                background: '#ffffff',
+                                iconColor: '#b89247',
+                                customClass: {
+                                    title: 'text-navy font-bold'
+                                }
+                            }).then(() => {
+                                // เปลี่ยนหน้าจอไปยังระบบหลัก (index.html) ผ่านการแนบ parameter ไปกับ URL
+                                document.getElementById('loading').classList.remove('hidden');
+                                document.querySelector('#loading p').innerText = 'กำลังพาท่านเข้าสู่ระบบ...';
+                                
+                                if (response.url) {
+                                    window.top.location.href = response.url + '?page=index';
+                                } else {
+                                    // สำรองไว้กรณีเก่า
+                                    google.script.run.withSuccessHandler(function(url) {
+                                        window.top.location.href = url + '?page=index';
+                                    }).getWebAppUrl();
+                                }
+                            });
+                        } else {
+                            Swal.fire({
+                                icon: 'error',
+                                title: 'ไม่สามารถเข้าสู่ระบบได้',
+                                text: response.message,
+                                confirmButtonColor: '#111d2e',
+                                background: '#ffffff',
+                                customClass: {
+                                    title: 'text-navy font-bold'
+                                }
+                            });
+                        }
+                    })
+                    .withFailureHandler(function(error) {
+                        document.getElementById('loading').classList.add('hidden');
+                        Swal.fire({
+                            icon: 'error',
+                            title: 'เกิดข้อผิดพลาด',
+                            text: 'ไม่สามารถติดต่อเซิร์ฟเวอร์ได้: ' + error,
+                            confirmButtonColor: '#111d2e'
+                        });
+                    })
+                    .verifyLogin(user, pass);
+            } else {
+                // สำหรับใช้ทดสอบบน Local (ถ้าไม่ได้รันผ่าน Apps Script)
+                setTimeout(() => {
+                    document.getElementById('loading').classList.add('hidden');
+                    if (user === 'chotdecha.k' && pass === 'gunn020643') {
+                        Swal.fire('Success', 'Local Login Successful', 'success');
+                    } else {
+                        Swal.fire('Error', 'Invalid local credentials', 'error');
+                    }
+                }, 1000);
+            }
+        }
+    </script>
+</body>
+</html>

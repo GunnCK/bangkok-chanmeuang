@@ -1,0 +1,195 @@
+// กำหนด Spreadsheet ID และชื่อ Sheet
+const SHEET_ID = '1bgZqJ5fiDbA0wSGNslYnmo-WVEk2K9v3dXqaNEA8iik';
+const SHEET_NAME = 'Condo Listing';
+
+// ฟังก์ชันเริ่มแรกสำหรับเปิดหน้า Web App
+function doGet(e) {
+  let page = 'Login'; // เริ่มต้นให้เปิดหน้า Login ก่อนเสมอ
+  if (e.parameter.page) {
+    page = e.parameter.page;
+  }
+  
+  const title = page === 'Login' ? 'Bangkok Chanmeuang - Login' : 'Bangkok Chanmeuang - Condo Listing';
+  
+  return HtmlService.createTemplateFromFile(page)
+    .evaluate()
+    .setTitle(title)
+    .addMetaTag('viewport', 'width=device-width, initial-scale=1.0');
+}
+
+// ฟังก์ชันดึง URL ปัจจุบันของ Web App เพื่อใช้สำหรับการ Redirect หน้า
+function getWebAppUrl() {
+  return ScriptApp.getService().getUrl();
+}
+
+// ฟังก์ชันดึงข้อมูลจาก Google Sheet เพื่อไปแสดงในตาราง
+function getData() {
+  try {
+    const ss = SpreadsheetApp.openById(SHEET_ID);
+    const sheet = ss.getSheetByName(SHEET_NAME);
+    
+    if (!sheet) {
+      createSheetWithHeaders(ss);
+      return [];
+    }
+
+    const data = sheet.getDataRange().getValues();
+    if (data.length <= 1) return [];
+
+    const headers = data[0];
+    let result = [];
+
+    for (let i = 1; i < data.length; i++) {
+      const row = data[i];
+      if (row.join('') === '') continue;
+
+      let leaseStartStr = row[15] instanceof Date ? Utilities.formatDate(row[15], Session.getScriptTimeZone(), "yyyy-MM-dd") : row[15];
+      let leaseEndStr = row[16] instanceof Date ? Utilities.formatDate(row[16], Session.getScriptTimeZone(), "yyyy-MM-dd") : row[16];
+
+      result.push({
+        rowIndex: i + 1,
+        no: row[0],
+        condo: row[1],
+        roomType: row[2],
+        building: row[3],
+        floor: row[4],
+        room: row[5],
+        size: row[6],
+        bed: row[7],
+        bath: row[8],
+        parking: row[9],
+        district: row[10],
+        zone: row[11],
+        sales: row[12],
+        status: row[13],
+        price: row[14],
+        leaseStart: leaseStartStr,
+        leaseEnd: leaseEndStr,
+        type: row[17],
+        facebook: row[18],
+        googleMap: row[19],
+        remark: row[20],
+        propertyType: row[21],
+        petFriendly: row[22],
+        ownerName: row[23] || "",
+        ownerPhone: row[24] || "",
+        ownerLine: row[25] || "",
+        ownerFacebook: row[26] || ""
+      });
+    }
+    return result.reverse();
+  } catch (error) {
+    return { status: 'error', message: error.toString() };
+  }
+}
+
+function saveData(formObj) {
+  try {
+    const ss = SpreadsheetApp.openById(SHEET_ID);
+    const sheet = ss.getSheetByName(SHEET_NAME);
+    
+    const rowData = [
+      formObj.no,
+      formObj.condo,
+      formObj.roomType,
+      formObj.building,
+      formObj.floor,
+      formObj.room,
+      formObj.size,
+      formObj.bed,
+      formObj.bath,
+      formObj.parking,
+      formObj.district,
+      formObj.zone,
+      formObj.sales,
+      formObj.status,
+      formObj.price,
+      formObj.leaseStart,
+      formObj.leaseEnd,
+      formObj.type,
+      formObj.facebook,
+      formObj.googleMap,
+      formObj.remark,
+      formObj.propertyType,
+      formObj.petFriendly === 'Yes' || formObj.petFriendly === true ? "Yes" : "No",
+      formObj.ownerName || "",
+      formObj.ownerPhone || "",
+      formObj.ownerLine || "",
+      formObj.ownerFacebook || ""
+    ];
+
+    if (formObj.rowIndex) {
+      sheet.getRange(parseInt(formObj.rowIndex), 1, 1, rowData.length).setValues([rowData]);
+    } else {
+      sheet.appendRow(rowData);
+    }
+    return { status: 'success' };
+  } catch (error) {
+    return { status: 'error', message: error.toString() };
+  }
+}
+
+function deleteRow(rowIndex) {
+  try {
+    const ss = SpreadsheetApp.openById(SHEET_ID);
+    const sheet = ss.getSheetByName(SHEET_NAME);
+    sheet.deleteRow(parseInt(rowIndex));
+    return { status: 'success' };
+  } catch (error) {
+    return { status: 'error', message: error.toString() };
+  }
+}
+
+function createSheetWithHeaders(ss) {
+  const sheet = ss.insertSheet(SHEET_NAME);
+  const headers = [
+    "No.", "คอนโด", "ประเภทห้อง", "ตึก/อาคาร", "ชั้น", "ห้อง", "ขนาด ตร.ม.", "ห้องนอน", "ห้องน้ำ", 
+    "ที่จอดรถ", "จังหวัด", "โซน", "เซลส์", "สถานะ", "ค่าเช่า", "สัญญาเช่า", "หมดสัญญา", "ประเภท", 
+    "Facebook", "Google Map", "หมายเหตุ", "ประเภทอสังหา", "สัตว์เลี้ยง",
+    "ชื่อเจ้าของ", "เบอร์โทรเจ้าของ", "Line ID เจ้าของ", "Facebook เจ้าของ"
+  ];
+  sheet.getRange(1, 1, 1, headers.length).setValues([headers]);
+  sheet.getRange("1:1").setFontWeight("bold").setBackground("#e2e8f0");
+}
+
+// ฟังก์ชันบันทึก log การดูข้อมูลเจ้าของ และดึงประวัติการเข้าชมของรหัสทรัพย์นั้นกลับมา
+function logAndGetOwnerViews(bcCode, username, name) {
+  try {
+    const ss = SpreadsheetApp.openById(SHEET_ID);
+    let sheet = ss.getSheetByName('Log');
+    
+    // ถ้ายังไม่มี Sheet 'Log' ให้สร้างขึ้นมาใหม่
+    if (!sheet) {
+      sheet = ss.insertSheet('Log');
+      const headers = ["รหัส BC", "Username", "Name", "วันที่", "เวลา"];
+      sheet.getRange(1, 1, 1, headers.length).setValues([headers]);
+      sheet.getRange("1:1").setFontWeight("bold").setBackground("#e2e8f0");
+    }
+    
+    const now = new Date();
+    // แปลงวันที่และเวลาให้อยู่ในรูปแบบที่อ่านง่ายตาม Timezone ประเทศไทย
+    const dateStr = Utilities.formatDate(now, "Asia/Bangkok", "dd/MM/yyyy");
+    const timeStr = Utilities.formatDate(now, "Asia/Bangkok", "HH:mm:ss");
+    
+    // บันทึก log ใหม่
+    sheet.appendRow([bcCode, username, name, dateStr, timeStr]);
+    
+    // อ่านข้อมูล log ทั้งหมดที่ตรงกับรหัสทรัพย์นี้
+    const data = sheet.getDataRange().getValues();
+    let logs = [];
+    for (let i = 1; i < data.length; i++) {
+      if (data[i][0] === bcCode) {
+        logs.push({
+          name: data[i][2],
+          date: data[i][3] instanceof Date ? Utilities.formatDate(data[i][3], "Asia/Bangkok", "dd/MM/yyyy") : data[i][3],
+          time: data[i][4] instanceof Date ? Utilities.formatDate(data[i][4], "Asia/Bangkok", "HH:mm:ss") : data[i][4]
+        });
+      }
+    }
+    
+    // แสดง log ล่าสุดอยู่ด้านบน
+    return logs.reverse();
+  } catch (error) {
+    return [{name: 'Error', date: '', time: error.toString()}];
+  }
+}

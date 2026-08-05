@@ -1,0 +1,1210 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bangkok Chanmeuang - Condo Listing</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- SweetAlert2 สำหรับแจ้งเตือนแบบ Pop-up -->
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <!-- Font Awesome คลังไอคอน -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts: Prompt -->
+    <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Google Fonts: Playfair Display -->
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700&display=swap" rel="stylesheet">
+    
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        navy: { DEFAULT: '#111d2e', light: '#1e2f47' },
+                        gold: { DEFAULT: '#b89247', light: '#cfa85e', hover: '#a07d39' }
+                    }
+                }
+            }
+        }
+    </script>
+    
+    <style>
+        body { font-family: 'Prompt', sans-serif; background-color: #f3f4f6; }
+        .font-logo { font-family: 'Playfair Display', serif; }
+        /* สไตล์ความสวยงามของ scrollbar */
+        ::-webkit-scrollbar { width: 8px; height: 8px; }
+        ::-webkit-scrollbar-track { background: #f1f1f1; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+        .modal-body { max-height: 70vh; overflow-y: auto; }
+        .line-clamp-2 {
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;  
+            overflow: hidden;
+        }
+    </style>
+</head>
+<body class="flex flex-col min-h-screen">
+
+    <!-- Header & Navigation -->
+    <header class="bg-navy text-white shadow-md sticky top-0 z-40 border-b-4 border-gold">
+        <div class="w-full px-4 sm:px-6 lg:px-8 py-4 flex justify-between items-center">
+            <div class="flex items-center">
+                <img src="https://lh3.googleusercontent.com/d/12hJFK7AYOuvL3xHFGhmeRyMv2uS8159J" alt="Logo" class="h-10 sm:h-12 w-auto mr-3 object-contain rounded-md bg-white p-1 shadow-sm" onerror="this.onerror=null; this.src='https://drive.google.com/thumbnail?id=12hJFK7AYOuvL3xHFGhmeRyMv2uS8159J&sz=w500';">
+                <div class="flex flex-col">
+                    <span class="text-2xl font-logo font-bold tracking-[0.1em] uppercase leading-none">Bangkok</span>
+                    <span class="text-[0.65rem] font-medium tracking-[0.25em] text-gold uppercase mt-1">Chanmeuang</span>
+                </div>
+            </div>
+            <div class="flex items-center space-x-3">
+                <div class="hidden md:flex items-center text-sm mr-2 border-r border-gray-600 pr-4">
+                    <div class="w-8 h-8 rounded-full bg-navy-light border border-gold flex items-center justify-center text-gold mr-3 shadow-sm">
+                        <i class="fa-solid fa-user"></i>
+                    </div>
+                    <div class="flex flex-col">
+                        <span id="display-userName" class="font-semibold text-gray-200 leading-tight">-</span>
+                        <span id="display-userRole" class="text-[10px] text-gray-400 font-medium"></span>
+                    </div>
+                </div>
+                <button id="btn-manage-users" onclick="goUserManagement()" class="hidden bg-white text-navy border border-gray-300 hover:bg-gray-100 px-4 py-2 rounded-lg font-medium shadow-sm transition duration-200 flex items-center text-sm sm:text-base">
+                    <i class="fa-solid fa-users-gear mr-2"></i> จัดการผู้ใช้งาน
+                </button>
+                <button onclick="openModal('add')" class="bg-gold hover:bg-gold-hover text-white px-4 py-2 rounded-lg font-medium shadow transition duration-200 flex items-center text-sm sm:text-base">
+                    <i class="fa-solid fa-plus mr-2"></i> เพิ่มข้อมูล
+                </button>
+                <button onclick="logout()" class="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg font-medium shadow transition duration-200 flex items-center text-sm sm:text-base" title="ออกจากระบบ">
+                    <i class="fa-solid fa-power-off mr-2"></i> ออกจากระบบ
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content Area -->
+    <main class="flex-grow max-w-[100%] w-full mx-auto p-4 sm:p-6 lg:p-8">
+        
+        <!-- Loading Indicator -->
+        <div id="loading" class="flex flex-col items-center justify-center py-20">
+            <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-navy mb-4"></div>
+            <p class="text-gray-600 font-medium">กำลังโหลดข้อมูลระบบ...</p>
+        </div>
+
+        <div id="main-content" class="hidden">
+            
+            <!-- Banner แจ้งเตือนสัญญากำลังจะหมดอายุภายใน 1 เดือน (จะถูกเปิดแสดงอัตโนมัติเมื่อคัดเจอข้อมูล) -->
+            <div id="expiry-alert-banner" class="hidden bg-amber-50 border-l-4 border-amber-500 p-4 mb-6 rounded-r-xl shadow-sm flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                <div class="flex items-center">
+                    <i class="fa-solid fa-triangle-exclamation text-amber-500 text-xl mr-3 animate-bounce"></i>
+                    <div>
+                        <p class="text-sm font-bold text-amber-800">แจ้งเตือนสัญญาเช่าใกล้หมดอายุ!</p>
+                        <p class="text-xs text-amber-700">พบทรัพย์สินจำนวน <span id="expiring-count" class="font-bold text-red-600">0</span> รายการ ที่กำลังจะหมดสัญญาเช่าภายใน 1 เดือน</p>
+                    </div>
+                </div>
+                <button onclick="filterExpiringOnly()" class="bg-amber-600 hover:bg-amber-700 text-white text-xs px-3 py-2 rounded-lg font-medium transition shadow-sm flex items-center justify-center self-start sm:self-center">
+                    <i class="fa-solid fa-eye mr-1.5"></i> ดูรายการใกล้หมดสัญญาทั้งหมด
+                </button>
+            </div>
+
+            <!-- Filter Section -->
+            <div class="bg-white rounded-xl shadow-md mb-6 overflow-hidden">
+                <div class="bg-gray-100 px-4 py-3 border-b border-gray-200 flex justify-between items-center cursor-pointer hover:bg-gray-200 transition" onclick="toggleFilter()">
+                    <h3 class="text-navy font-bold text-sm sm:text-base"><i class="fa-solid fa-filter mr-2"></i>ค้นหาและกรองข้อมูล</h3>
+                    <i class="fa-solid fa-chevron-up text-gray-500 transition-transform duration-300" id="filter-icon"></i>
+                </div>
+                <div id="filter-container" class="p-4 transition-all duration-300">
+                    <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-3">
+                        <!-- 1. รหัสทรัพย์ -->
+                        <div>
+                            <label class="text-xs font-medium text-gray-600 mb-1 block">รหัสทรัพย์ (No.)</label>
+                            <input type="text" id="f-no" list="dl-no" placeholder="เช่น BC-001" class="w-full border border-gray-300 rounded p-1.5 text-sm outline-none focus:ring-1 focus:ring-navy focus:border-navy" oninput="applyFilters()">
+                            <datalist id="dl-no"></datalist>
+                        </div>
+                        <!-- ประเภทอสังหา -->
+                        <div>
+                            <label class="text-xs font-medium text-gray-600 mb-1 block">ประเภทอสังหา</label>
+                            <select id="f-propertyType" class="w-full border border-gray-300 rounded p-1.5 text-sm outline-none focus:ring-1 focus:ring-navy focus:border-navy bg-white" onchange="applyFilters()">
+                                <option value="">- ทั้งหมด -</option>
+                                <option value="คอนโด">คอนโด</option>
+                                <option value="บ้าน">บ้าน</option>
+                            </select>
+                        </div>
+                        <!-- 2. คอนโด -->
+                        <div>
+                            <label class="text-xs font-medium text-gray-600 mb-1 block">คอนโด</label>
+                            <input type="text" id="f-condo" list="dl-condo" placeholder="ชื่อคอนโด..." class="w-full border border-gray-300 rounded p-1.5 text-sm outline-none focus:ring-1 focus:ring-navy focus:border-navy" oninput="applyFilters()">
+                            <datalist id="dl-condo"></datalist>
+                        </div>
+                        <!-- 3. ประเภทห้อง -->
+                        <div>
+                            <label class="text-xs font-medium text-gray-600 mb-1 block">ประเภทห้อง</label>
+                            <select id="f-roomType" class="w-full border border-gray-300 rounded p-1.5 text-sm outline-none focus:ring-1 focus:ring-navy focus:border-navy bg-white" onchange="applyFilters()">
+                                <option value="">- ทั้งหมด -</option>
+                                <option value="Simplex">Simplex</option>
+                                <option value="Simplex 2 Bed">Simplex 2 Bed</option>
+                                <option value="Duplex 2 ชั้น">Duplex 2 ชั้น</option>
+                            </select>
+                        </div>
+                        <!-- 4. จังหวัด -->
+                        <div>
+                            <label class="text-xs font-medium text-gray-600 mb-1 block">จังหวัด</label>
+                            <select id="f-zone" class="w-full border border-gray-300 rounded p-1.5 text-sm outline-none focus:ring-1 focus:ring-navy focus:border-navy bg-white" onchange="applyFilters()">
+                                <option value="">- ทั้งหมด -</option>
+                                <option value="กรุงเทพ">กรุงเทพ</option>
+                                <option value="นนทบุรี">นนทบุรี</option>
+                            </select>
+                        </div>
+                        <!-- 5. โซน -->
+                        <div>
+                            <label class="text-xs font-medium text-gray-600 mb-1 block">โซน</label>
+                            <select id="f-district" class="w-full border border-gray-300 rounded p-1.5 text-sm outline-none focus:ring-1 focus:ring-navy focus:border-navy bg-white" onchange="applyFilters()">
+                                <option value="">- ทั้งหมด -</option>
+                                <option value="Zone 1 รัตนาธิเบรศ พระนั่งเกล้า สนามบินน้ำ งามวงศ์วาน แคราย แยกพงษ์เพชร">Zone 1 รัตนาธิเบรศ พระนั่งเกล้า สนามบินน้ำ งามวงศ์วาน แคราย แยกพงษ์เพชร</option>
+                                <option value="Zone 2 แจ้งวัฒนะ ปากเกร็ด คลองปะปา เมืองทองธานี">Zone 2 แจ้งวัฒนะ ปากเกร็ด คลองปะปา เมืองทองธานี</option>
+                                <option value="Zone 3 บางซื่อ เตาปูน วงศ์สว่าง ติวานนท์ บางซ่อน พระจอมเกล้า บางโพ">Zone 3 บางซื่อ เตาปูน วงศ์สว่าง ติวานนท์ บางซ่อน พระจอมเกล้า บางโพ</option>
+                                <option value="Zone 4 ไทรม้า บางใหญ่ บางพลู">Zone 4 ไทรม้า บางใหญ่ บางพลู</option>
+                                <option value="Zone 5 เกษตรศาสตร์ รัชโยธิน บางเขน สะพานใหม่">Zone 5 เกษตรศาสตร์ รัชโยธิน บางเขน สะพานใหม่</option>
+                                <option value="Zone 6 จตุจักร ลาดพร้าว">Zone 6 จตุจักร ลาดพร้าว</option>
+                          </select>
+                        </div>
+                        <!-- เลขห้อง -->
+                        <div>
+                            <label class="text-xs font-medium text-gray-600 mb-1 block">เลขห้อง</label>
+                            <input type="text" id="f-room" placeholder="เลขห้อง..." class="w-full border border-gray-300 rounded p-1.5 text-sm outline-none focus:ring-1 focus:ring-navy focus:border-navy" oninput="applyFilters()">
+                        </div>
+                        <!-- 6. ขนาด ตร.ม. -->
+                        <div>
+                            <label class="text-xs font-medium text-gray-600 mb-1 block">ขนาด (ตร.ม.)</label>
+                            <select id="f-size" class="w-full border border-gray-300 rounded p-1.5 text-sm outline-none focus:ring-1 focus:ring-navy focus:border-navy bg-white" onchange="applyFilters()">
+                                <option value="">- ทั้งหมด -</option>
+                                <option value="20-30">20 - 30 ตร.ม.</option>
+                                <option value="30-50">30 - 50 ตร.ม.</option>
+                                <option value="50+">50 ตร.ม. ขึ้นไป</option>
+                            </select>
+                        </div>
+                        <!-- 7. ห้องนอน -->
+                        <div>
+                            <label class="text-xs font-medium text-gray-600 mb-1 block">ห้องนอน</label>
+                            <input type="number" id="f-bed" min="0" placeholder="จำนวน..." class="w-full border border-gray-300 rounded p-1.5 text-sm outline-none focus:ring-1 focus:ring-navy focus:border-navy" oninput="applyFilters()">
+                        </div>
+                        <!-- 8. ห้องน้ำ -->
+                        <div>
+                            <label class="text-xs font-medium text-gray-600 mb-1 block">ห้องน้ำ</label>
+                            <input type="number" id="f-bath" min="0" placeholder="จำนวน..." class="w-full border border-gray-300 rounded p-1.5 text-sm outline-none focus:ring-1 focus:ring-navy focus:border-navy" oninput="applyFilters()">
+                        </div>
+                        <!-- 9. ที่จอดรถ -->
+                        <div>
+                            <label class="text-xs font-medium text-gray-600 mb-1 block">ที่จอดรถ</label>
+                            <input type="number" id="f-parking" min="0" placeholder="จำนวน..." class="w-full border border-gray-300 rounded p-1.5 text-sm outline-none focus:ring-1 focus:ring-navy focus:border-navy" oninput="applyFilters()">
+                        </div>
+                        <!-- สัตว์เลี้ยง -->
+                        <div>
+                            <label class="text-xs font-medium text-gray-600 mb-1 block">สัตว์เลี้ยง</label>
+                            <select id="f-petFriendly" class="w-full border border-gray-300 rounded p-1.5 text-sm outline-none focus:ring-1 focus:ring-navy focus:border-navy bg-white" onchange="applyFilters()">
+                                <option value="">- ทั้งหมด -</option>
+                                <option value="Yes">รับสัตว์เลี้ยง</option>
+                                <option value="No">ไม่รับสัตว์เลี้ยง</option>
+                            </select>
+                        </div>
+                        <!-- 10. สถานะ -->
+                        <div>
+                            <label class="text-xs font-medium text-gray-600 mb-1 block">สถานะ</label>
+                            <select id="f-status" class="w-full border border-gray-300 rounded p-1.5 text-sm outline-none focus:ring-1 focus:ring-navy focus:border-navy bg-white" onchange="applyFilters()">
+                                <option value="">- ทั้งหมด -</option>
+                                <option value="ห้องว่าง">ห้องว่าง</option>
+                                <option value="ไม่ว่าง">ไม่ว่าง</option>
+                                <option value="รออัพเดต">รออัพเดต</option>
+                                <option value="กำลังตกแต่ง">กำลังตกแต่ง</option>
+                                <option value="Hold">Hold</option>
+                            </select>
+                        </div>
+                        <!-- 11. ค่าเช่า -->
+                        <div>
+                            <label class="text-xs font-medium text-gray-600 mb-1 block">ค่าเช่า / ราคา</label>
+                            <select id="f-price" class="w-full border border-gray-300 rounded p-1.5 text-sm outline-none focus:ring-1 focus:ring-navy focus:border-navy bg-white" onchange="applyFilters()">
+                                <option value="">- ทั้งหมด -</option>
+                                <option value="5000-10000">5,000 - 10,000 บาท</option>
+                                <option value="10000-15000">10,000 - 15,000 บาท</option>
+                                <option value="15000-20000">15,000 - 20,000 บาท</option>
+                                <option value="20000-25000">20,000 - 25,000 บาท</option>
+                                <option value="25000+">25,000 บาท ขึ้นไป</option>
+                            </select>
+                        </div>
+                        <!-- 12. ประเภท -->
+                        <div>
+                            <label class="text-xs font-medium text-gray-600 mb-1 block">ประเภท</label>
+                            <select id="f-type" class="w-full border border-gray-300 rounded p-1.5 text-sm outline-none focus:ring-1 focus:ring-navy focus:border-navy bg-white" onchange="applyFilters()">
+                                <option value="">- ทั้งหมด -</option>
+                                <option value="เช่า">เช่า</option>
+                                <option value="ขาย">ขาย</option>
+                                <option value="เช่า/ขาย">เช่า/ขาย</option>
+                            </select>
+                        </div>
+                        <!-- 13. เซลส์ -->
+                        <div>
+                            <label class="text-xs font-medium text-gray-600 mb-1 block">เซลส์</label>
+                            <select id="f-sales" class="w-full border border-gray-300 rounded p-1.5 text-sm outline-none focus:ring-1 focus:ring-navy focus:border-navy bg-white" onchange="applyFilters()">
+                                <option value="">- ทั้งหมด -</option>
+                                <option value="Ink">Ink</option>
+                                <option value="Nam">Nam</option>
+                                <option value="Way">Way</option>
+                                <option value="Beem">Beem</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="mt-4 flex justify-end">
+                        <button onclick="clearFilters()" class="px-4 py-1.5 bg-gray-200 hover:bg-gray-300 text-gray-700 rounded text-sm font-medium transition flex items-center shadow-sm">
+                            <i class="fa-solid fa-rotate-right mr-2"></i> ล้างตัวกรอง
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ส่วนหัวแสดงสถิติจำนวนทรัพย์ -->
+            <div class="flex justify-between items-end mb-4 px-1">
+                <h2 class="text-lg font-bold text-navy border-l-4 border-gold pl-3">รายการทรัพย์สิน</h2>
+                <div class="text-sm text-gray-600 bg-white px-3 py-1 rounded-full shadow-sm border border-gray-200">
+                    แสดง: <span id="filtered-records" class="font-bold text-navy">0</span> / <span id="total-records" class="font-semibold">0</span>
+                </div>
+            </div>
+
+            <!-- Container สำหรับแสดงผลการ์ดทรัพย์สิน -->
+            <div id="data-container" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4 gap-6 pb-10">
+                <!-- ข้อมูลแต่ละการ์ดจะถูกใส่ในนี้ด้วยจาวาสคริปต์ -->
+            </div>
+            
+            <div id="empty-message" class="hidden bg-white rounded-xl shadow-sm border border-gray-200 p-10 text-center">
+                <i class="fa-regular fa-folder-open text-4xl text-gray-300 mb-3"></i>
+                <p class="text-gray-500 font-medium">ไม่พบข้อมูล Condo Listing จากเงื่อนไขที่ค้นหา</p>
+            </div>
+            
+            <!-- Pagination Container -->
+            <div id="pagination-container" class="mt-8 mb-4"></div>
+        </div>
+    </main>
+
+    <!-- Footer -->
+    <footer class="bg-navy text-gray-400 py-4 text-center text-sm shadow-inner mt-auto border-t border-gold">
+        Power by <span class="text-gold font-semibold tracking-wider">BANGKOK CHANMEUANG</span>
+    </footer>
+
+    <!-- Form Modal (Add/Edit) -->
+    <div id="form-modal" class="fixed inset-0 bg-black bg-opacity-50 z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-white rounded-xl shadow-2xl w-full max-w-4xl overflow-hidden flex flex-col">
+            <div class="bg-navy text-white px-6 py-4 flex justify-between items-center border-b-[3px] border-gold">
+                <h2 id="modal-title" class="text-lg font-bold text-gold">เพิ่มข้อมูลใหม่</h2>
+                <button onclick="closeModal()" class="text-gray-300 hover:text-white transition">
+                    <i class="fa-solid fa-xmark text-xl"></i>
+                </button>
+            </div>
+            
+            <div class="modal-body p-6">
+                <form id="data-form" onsubmit="submitForm(event)">
+                    <input type="hidden" id="rowIndex" name="rowIndex">
+                    <input type="hidden" id="no" name="no">
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">ประเภทอสังหา<span class="text-red-500">*</span></label>
+                            <select id="propertyType" name="propertyType" required class="w-full border border-gray-300 rounded-lg p-2 focus:ring-2 focus:ring-blue-500 outline-none bg-white">
+                                <option value="">- เลือก -</option>
+                                <option value="คอนโด">คอนโด</option>
+                                <option value="บ้าน">บ้าน</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">คอนโด<span class="text-red-500">*</span></label>
+                            <input type="text" id="condo" name="condo" list="dl-condo" placeholder="ชื่อคอนโด..." required class="w-full border border-gray-300 rounded-lg p-2 focus:ring-2 focus:ring-blue-500 outline-none">
+                            <datalist id="dl-condo"></datalist>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">ประเภทห้อง</label>
+                            <select id="roomType" name="roomType" class="w-full border border-gray-300 rounded-lg p-2 focus:ring-2 focus:ring-blue-500 outline-none bg-white">
+                                <option value="">- เลือก -</option>
+                                <option value="Simplex">Simplex</option>
+                                <option value="Simplex 2 Bed">Simplex 2 Bed</option>
+                                <option value="Duplex 2 ชั้น">Duplex 2 ชั้น</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">ตึก/อาคาร</label>
+                            <input type="text" id="building" name="building" placeholder="ตึก/อาคาร..." class="w-full border border-gray-300 rounded-lg p-2 focus:ring-2 focus:ring-blue-500 outline-none">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">ชั้น</label>
+                            <input type="text" id="floor" name="floor" placeholder="ชั้น..." class="w-full border border-gray-300 rounded-lg p-2 focus:ring-2 focus:ring-blue-500 outline-none">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">เลขห้อง</label>
+                            <input type="text" id="room" name="room" placeholder="เลขห้อง..." class="w-full border border-gray-300 rounded-lg p-2 focus:ring-2 focus:ring-blue-500 outline-none">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">ขนาด (ตร.ม.)</label>
+                            <input type="number" step="0.01" id="size" name="size" placeholder="ขนาด(ตร.ม.)..." class="w-full border border-gray-300 rounded-lg p-2 focus:ring-2 focus:ring-blue-500 outline-none">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">ห้องนอน</label>
+                            <input type="number" id="bed" name="bed" placeholder="จำนวน..." class="w-full border border-gray-300 rounded-lg p-2 focus:ring-2 focus:ring-blue-500 outline-none">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">ห้องน้ำ</label>
+                            <input type="number" id="bath" name="bath" placeholder="จำนวน..." class="w-full border border-gray-300 rounded-lg p-2 focus:ring-2 focus:ring-blue-500 outline-none">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">ที่จอดรถ</label>
+                            <input type="number" id="parking" name="parking" placeholder="จำนวน..." class="w-full border border-gray-300 rounded-lg p-2 focus:ring-2 focus:ring-blue-500 outline-none">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">จังหวัด<span class="text-red-500">*</span></label>
+                            <select id="zone" name="zone" required class="w-full border border-gray-300 rounded-lg p-2 focus:ring-2 focus:ring-blue-500 outline-none bg-white">
+                                <option value="">- เลือก -</option>
+                                <option value="กรุงเทพ">กรุงเทพ</option>
+                                <option value="นนทบุรี">นนทบุรี</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">โซน<span class="text-red-500">*</span></label>
+                            <select id="district" name="district" required class="w-full border border-gray-300 rounded-lg p-2 focus:ring-2 focus:ring-blue-500 outline-none">
+                                <option value="">- เลือก -</option>
+                                <option value="Zone 1 รัตนาธิเบรศ พระนั่งเกล้า สนามบินน้ำ งามวงศ์วาน แคราย แยกพงษ์เพชร">Zone 1 รัตนาธิเบรศ พระนั่งเกล้า สนามบินน้ำ งามวงศ์วาน แคราย แยกพงษ์เพชร</option>
+                                <option value="Zone 2 แจ้งวัฒนะ ปากเกร็ด คลองปะปา เมืองทองธานี">Zone 2 แจ้งวัฒนะ ปากเกร็ด คลองปะปา เมืองทองธานี</option>
+                                <option value="Zone 3 บางซื่อ เตาปูน วงศ์สว่าง ติวานนท์ บางซ่อน พระจอมเกล้า บางโพ">Zone 3 บางซื่อ เตาปูน วงศ์สว่าง ติวานนท์ บางซ่อน พระจอมเกล้า บางโพ</option>
+                                <option value="Zone 4 ไทรม้า บางใหญ่ บางพลู">Zone 4 ไทรม้า บางใหญ่ บางพลู</option>
+                                <option value="Zone 5 เกษตรศาสตร์ รัชโยธิน บางเขน สะพานใหม่">Zone 5 เกษตรศาสตร์ รัชโยธิน บางเขน สะพานใหม่</option>
+                                <option value="Zone 6 จตุจักร ลาดพร้าว">Zone 6 จตุจักร ลาดพร้าว</option>
+                          </select>
+                        </div>
+                        <!-- สัตว์เลี้ยง (Checkbox) -->
+                        <div class="col-span-1 md:col-span-2 lg:col-span-3 flex items-center">
+                            <input type="checkbox" id="petFriendly" name="petFriendly" value="Yes" class="w-5 h-5 text-blue-600 border-gray-300 rounded focus:ring-blue-500 cursor-pointer">
+                            <label for="petFriendly" class="ml-2 block text-sm font-medium text-gray-700 cursor-pointer">อนุญาตให้เลี้ยงสัตว์ (Pet Friendly)</label>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">เซลส์</label>
+                            <select id="sales" name="sales" required class="w-full border border-gray-300 rounded-lg p-2 focus:ring-2 focus:ring-blue-500 outline-none bg-white">
+                                <option value="">- เลือก -</option>
+                                <option value="Ink">Ink</option>
+                                <option value="Nam">Nam</option>
+                                <option value="Way">Way</option>
+                                <option value="Beem">Beem</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">สถานะ</label>
+                            <select id="status" name="status" class="w-full border border-gray-300 rounded-lg p-2 focus:ring-2 focus:ring-blue-500 outline-none bg-white">
+                                <option value="">- เลือก -</option>
+                                <option value="ห้องว่าง">ห้องว่าง</option>
+                                <option value="ไม่ว่าง">ไม่ว่าง</option>
+                                <option value="รออัพเดต">รออัพเดต</option>
+                                <option value="กำลังตกแต่ง">กำลังตกแต่ง</option>
+                                <option value="Hold">Hold</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">ประเภท</label>
+                            <select id="type" name="type" class="w-full border border-gray-300 rounded-lg p-2 focus:ring-2 focus:ring-blue-500 outline-none bg-white">
+                                <option value="">- เลือก -</option>
+                                <option value="เช่า">เช่า</option>
+                                <option value="ขาย">ขาย</option>
+                                <option value="เช่า/ขาย">เช่า/ขาย</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">ค่าเช่า / ราคาขาย</label>
+                            <input type="text" id="price" name="price" placeholder="เช่น 15,000 / ด." class="w-full border border-gray-300 rounded-lg p-2 focus:ring-2 focus:ring-blue-500 outline-none">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">สัญญาเช่า (เริ่ม)</label>
+                            <input type="date" id="leaseStart" name="leaseStart" class="w-full border border-gray-300 rounded-lg p-2 focus:ring-2 focus:ring-blue-500 outline-none">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">หมดสัญญา</label>
+                            <input type="date" id="leaseEnd" name="leaseEnd" class="w-full border border-gray-300 rounded-lg p-2 focus:ring-2 focus:ring-blue-500 outline-none">
+                        </div>
+                        <div class="col-span-1 md:col-span-2 lg:col-span-3">
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Facebook (Link)</label>
+                            <input type="url" id="facebook" name="facebook" placeholder="https://..." class="w-full border border-gray-300 rounded-lg p-2 focus:ring-2 focus:ring-blue-500 outline-none">
+                        </div>
+                        <div class="col-span-1 md:col-span-2 lg:col-span-3">
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Google Map (Link)</label>
+                            <input type="url" id="googleMap" name="googleMap" placeholder="https://..." class="w-full border border-gray-300 rounded-lg p-2 focus:ring-2 focus:ring-navy outline-none">
+                        </div>
+                        <div class="col-span-1 md:col-span-2 lg:col-span-3">
+                            <label class="block text-sm font-medium text-gray-700 mb-1">หมายเหตุ</label>
+                            <textarea id="remark" name="remark" rows="2" class="w-full border border-gray-300 rounded-lg p-2 focus:ring-2 focus:ring-blue-500 outline-none"></textarea>
+                            <!-- Owner Info Section (Restricted) -->
+                            <div id="owner-section" class="col-span-1 md:col-span-2 hidden mt-2">
+                                <div class="bg-gray-50 p-4 rounded-xl border border-gray-200">
+                                    <h4 class="text-navy font-bold mb-3 flex items-center"><i class="fa-solid fa-address-book text-gold mr-2"></i>ข้อมูลเจ้าของ (เฉพาะ Admin)</h4>
+                                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                        <div>
+                                            <label class="block text-sm font-medium text-gray-700 mb-1">ชื่อเจ้าของ</label>
+                                            <input type="text" id="ownerName" name="ownerName" class="w-full border border-gray-300 rounded-lg p-2 focus:ring-2 focus:ring-navy focus:border-navy outline-none transition">
+                                        </div>
+                                        <div>
+                                            <label class="block text-sm font-medium text-gray-700 mb-1">เบอร์โทรศัพท์</label>
+                                            <input type="text" id="ownerPhone" name="ownerPhone" class="w-full border border-gray-300 rounded-lg p-2 focus:ring-2 focus:ring-navy focus:border-navy outline-none transition">
+                                        </div>
+                                        <div>
+                                            <label class="block text-sm font-medium text-gray-700 mb-1">Line ID</label>
+                                            <input type="text" id="ownerLine" name="ownerLine" class="w-full border border-gray-300 rounded-lg p-2 focus:ring-2 focus:ring-navy focus:border-navy outline-none transition">
+                                        </div>
+                                        <div>
+                                            <label class="block text-sm font-medium text-gray-700 mb-1">Facebook เจ้าของ</label>
+                                            <input type="text" id="ownerFacebook" name="ownerFacebook" class="w-full border border-gray-300 rounded-lg p-2 focus:ring-2 focus:ring-navy focus:border-navy outline-none transition">
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="mt-6 flex justify-end gap-3 pt-4 border-t border-gray-200">
+                        <button type="button" onclick="closeModal()" class="px-5 py-2 bg-gray-200 hover:bg-gray-300 text-gray-700 rounded-lg font-medium transition">
+                            ยกเลิก
+                        </button>
+                        <button type="submit" id="btn-submit" class="px-5 py-2 bg-navy hover:bg-navy-light text-white rounded-lg font-medium shadow transition flex items-center">
+                            <i class="fa-solid fa-save mr-2"></i> บันทึกข้อมูล
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Owner Info Modal -->
+    <div id="owner-modal" class="hidden fixed inset-0 bg-navy/80 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+        <div class="bg-white rounded-2xl w-full max-w-sm overflow-hidden shadow-2xl relative border border-gray-100">
+            <div class="absolute top-0 left-0 w-full h-2 bg-gradient-to-r from-gold-light via-gold to-gold-hover"></div>
+            <div class="bg-gray-50 px-6 py-4 flex justify-between items-center border-b border-gray-200">
+                <h3 class="text-xl font-bold text-navy flex items-center"><i class="fa-solid fa-address-book text-gold mr-3"></i>ข้อมูลเจ้าของ</h3>
+                <button type="button" onclick="closeOwnerModal()" class="text-gray-400 hover:text-red-500 transition-colors">
+                    <i class="fa-solid fa-xmark text-2xl"></i>
+                </button>
+            </div>
+            <div class="p-6 space-y-4">
+                <div>
+                    <span class="block text-xs font-bold text-gray-400 uppercase tracking-wide mb-1">ชื่อเจ้าของ</span>
+                    <p class="text-navy font-medium text-lg" id="view-ownerName">-</p>
+                </div>
+                <div>
+                    <span class="block text-xs font-bold text-gray-400 uppercase tracking-wide mb-1">เบอร์โทรศัพท์</span>
+                    <p class="text-gray-700 font-medium" id="view-ownerPhone">-</p>
+                </div>
+                <div>
+                    <span class="block text-xs font-bold text-gray-400 uppercase tracking-wide mb-1">Line ID</span>
+                    <p class="text-gray-700 font-medium" id="view-ownerLine">-</p>
+                </div>
+                <div>
+                    <span class="block text-xs font-bold text-gray-400 uppercase tracking-wide mb-1">Facebook เจ้าของ</span>
+                    <p class="text-gray-700 font-medium" id="view-ownerFacebook">-</p>
+                </div>
+                <!-- Log section -->
+                <div class="mt-4 pt-4 border-t border-gray-200">
+                    <span class="block text-xs font-bold text-gray-400 uppercase tracking-wide mb-2">ประวัติการเข้าชม</span>
+                    <div class="max-h-32 overflow-y-auto">
+                        <table class="w-full text-left">
+                            <thead>
+                                <tr class="text-xs text-gray-500 border-b border-gray-200">
+                                    <th class="pb-1 font-medium">Name</th>
+                                    <th class="pb-1 font-medium">วันที่</th>
+                                    <th class="pb-1 font-medium">เวลา</th>
+                                </tr>
+                            </thead>
+                            <tbody id="view-logTable">
+                                <!-- Logs will be injected here -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+            <div class="bg-gray-50 px-6 py-4 flex justify-end">
+                <button type="button" onclick="closeOwnerModal()" class="bg-navy hover:bg-navy-light text-white font-semibold py-2 px-5 rounded-lg shadow-sm transition">ปิดหน้าต่าง</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let allData = [];
+        let currentFilteredData = [];
+        let currentPage = 1;
+        const recordsPerPage = 50;
+        let showExpiringOnly = false; // สถานะสำหรับสลับเลือกกรองดูเฉพาะทรัพย์สินที่ใกล้หมดสัญญา
+        let canViewOwner = false; // เก็บสถานะสิทธิ์การดูข้อมูลเจ้าของ
+
+        document.addEventListener('DOMContentLoaded', () => {
+            // ตรวจสอบสถานะการล็อกอิน ถ้ายังไม่ล็อกอินให้พากลับไปหน้า Login
+            if (sessionStorage.getItem('isLoggedIn') !== 'true') {
+                document.getElementById('loading').classList.remove('hidden');
+                document.querySelector('#loading p').innerText = 'กรุณาเข้าสู่ระบบ...';
+                
+                if (typeof google !== 'undefined') {
+                    google.script.run.withSuccessHandler(function(url) {
+                        window.top.location.href = url + '?page=Login';
+                    }).getWebAppUrl();
+                }
+                return; // หยุดการทำงานส่วนอื่น
+            }
+            
+            // เซ็ตชื่อผู้ใช้และสิทธิ์ที่ Header
+            const userName = sessionStorage.getItem('userName') || 'User';
+            const role = sessionStorage.getItem('userRole') || 'User';
+            document.getElementById('display-userName').innerText = userName;
+            document.getElementById('display-userRole').innerText = role;
+            
+            // ตรวจสอบสิทธิ์การจัดการข้อมูล Owner
+            if (role === 'System Admin' || role === 'Admin') {
+                canViewOwner = true;
+                // แสดง Section ในฟอร์มเพิ่ม/แก้ไข
+                document.getElementById('owner-section').classList.remove('hidden');
+            }
+
+            // แสดงปุ่มจัดการผู้ใช้งาน หากสิทธิ์เป็น System Admin
+            if (role === 'System Admin') {
+                document.getElementById('btn-manage-users').classList.remove('hidden');
+            }
+            
+            // ถ้าระบบจำได้ว่าล็อกอินแล้ว ค่อยดึงข้อมูลมาแสดง
+            loadData();
+        });
+
+        // ฟังก์ชันไปหน้าจัดการผู้ใช้งาน
+        function goUserManagement() {
+            document.getElementById('loading').classList.remove('hidden');
+            document.getElementById('main-content').classList.add('hidden');
+            document.querySelector('#loading p').innerText = 'กำลังเปิดหน้าระบบจัดการ...';
+            
+            if (typeof google !== 'undefined') {
+                google.script.run.withSuccessHandler(function(url) {
+                    window.top.location.href = url + '?page=UserManagement';
+                }).getWebAppUrl();
+            }
+        }
+
+        // ฟังก์ชันออกจากระบบ
+        function logout() {
+            Swal.fire({
+                title: 'ต้องการออกจากระบบ?',
+                text: "คุณต้องการออกจากระบบและกลับไปหน้า Login ใช่หรือไม่",
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#d33',
+                cancelButtonColor: '#3085d6',
+                confirmButtonText: 'ออกจากระบบ',
+                cancelButtonText: 'ยกเลิก'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    sessionStorage.removeItem('isLoggedIn');
+                    sessionStorage.removeItem('userName');
+                    sessionStorage.removeItem('userRole');
+                    
+                    document.getElementById('loading').classList.remove('hidden');
+                    document.getElementById('main-content').classList.add('hidden');
+                    document.querySelector('#loading p').innerText = 'กำลังออกจากระบบ...';
+                    
+                    if (typeof google !== 'undefined') {
+                        google.script.run.withSuccessHandler(function(url) {
+                            window.top.location.href = url + '?page=Login';
+                        }).getWebAppUrl();
+                    } else {
+                        location.reload();
+                    }
+                }
+            });
+        }
+
+        // ฟังก์ชัน Toggle พับเก็บ Filter
+        function toggleFilter() {
+            const container = document.getElementById('filter-container');
+            const icon = document.getElementById('filter-icon');
+            container.classList.toggle('hidden');
+            icon.classList.toggle('rotate-180');
+        }
+
+        // เปิดหน้าต่างดูข้อมูลเจ้าของ
+        function viewOwner(itemEscapedStr) {
+            const userName = sessionStorage.getItem('userName') || 'Unknown';
+            const username = sessionStorage.getItem('username') || '';
+
+            if (!username) {
+                showError('ไม่พบข้อมูลผู้ใช้งาน กรุณาเข้าสู่ระบบใหม่');
+                return;
+            }
+
+            Swal.fire({
+                title: 'ยืนยันตัวตน',
+                text: "กรุณาป้อนรหัสผ่านของคุณเพื่อดูข้อมูลเจ้าของ",
+                input: 'password',
+                inputAttributes: {
+                    autocapitalize: 'off',
+                    autocorrect: 'off'
+                },
+                showCancelButton: true,
+                confirmButtonText: 'ยืนยัน',
+                cancelButtonText: 'ยกเลิก',
+                showLoaderOnConfirm: true,
+                confirmButtonColor: '#b89247',
+                preConfirm: (password) => {
+                    if (!password) {
+                        Swal.showValidationMessage('กรุณาป้อนรหัสผ่าน');
+                        return false;
+                    }
+                    return new Promise((resolve, reject) => {
+                        if (typeof google !== 'undefined') {
+                            google.script.run
+                                .withSuccessHandler(function(response) {
+                                    if (response.success) {
+                                        resolve(response);
+                                    } else {
+                                        reject(new Error(response.message || 'รหัสผ่านไม่ถูกต้อง'));
+                                    }
+                                })
+                                .withFailureHandler(function(error) {
+                                    reject(new Error('เชื่อมต่อเซิร์ฟเวอร์ไม่ได้'));
+                                })
+                                .verifyLogin(username, password);
+                        } else {
+                            // สำหรับทดสอบ Local
+                            if (password === '1234') resolve({success: true});
+                            else reject(new Error('รหัสผ่านไม่ถูกต้อง'));
+                        }
+                    }).catch(error => {
+                        Swal.showValidationMessage(error.message);
+                    });
+                },
+                allowOutsideClick: () => !Swal.isLoading()
+            }).then((result) => {
+                if (result.isConfirmed && result.value.success) {
+                    // รหัสผ่านถูกต้อง แสดงข้อมูลและบันทึก log
+                    const item = JSON.parse(itemEscapedStr);
+                    document.getElementById('view-ownerName').innerText = item.ownerName || '-';
+                    document.getElementById('view-ownerPhone').innerText = item.ownerPhone || '-';
+                    document.getElementById('view-ownerLine').innerText = item.ownerLine || '-';
+                    document.getElementById('view-ownerFacebook').innerText = item.ownerFacebook || '-';
+                    
+                    // clear previous logs
+                    document.getElementById('view-logTable').innerHTML = '<tr><td colspan="3" class="text-center text-sm text-gray-500 py-2">กำลังโหลดข้อมูลการเข้าชม...</td></tr>';
+                    
+                    document.getElementById('owner-modal').classList.remove('hidden');
+
+                    if (typeof google !== 'undefined') {
+                        google.script.run.withSuccessHandler(function(logs) {
+                            let logHtml = '';
+                            if (logs && logs.length > 0) {
+                                logs.forEach(log => {
+                                    logHtml += `<tr class="border-b border-gray-100">
+                                        <td class="py-1 text-sm text-gray-700">${log.name}</td>
+                                        <td class="py-1 text-sm text-gray-600">${log.date}</td>
+                                        <td class="py-1 text-sm text-gray-600">${log.time}</td>
+                                    </tr>`;
+                                });
+                            } else {
+                                logHtml = '<tr><td colspan="3" class="text-center text-sm text-gray-500 py-2">ยังไม่มีประวัติการเข้าชม</td></tr>';
+                            }
+                            document.getElementById('view-logTable').innerHTML = logHtml;
+                        }).logAndGetOwnerViews(item.no, username, userName);
+                    }
+                }
+            });
+        }
+
+        // ปิดหน้าต่างดูข้อมูลเจ้าของ
+        function closeOwnerModal() {
+            document.getElementById('owner-modal').classList.add('hidden');
+        }
+
+        // ดึงข้อมูลจากฝั่ง Apps Script (หลังบ้าน)
+        function loadData() {
+            document.getElementById('loading').classList.remove('hidden');
+            document.getElementById('main-content').classList.add('hidden');
+            
+            if (typeof google !== 'undefined') {
+                google.script.run.withSuccessHandler(onDataFetched).withFailureHandler(showError).getData();
+            } else {
+                console.warn("ไม่พบการเชื่อมต่อของ Google Apps Script");
+                onDataFetched([]);
+            }
+        }
+
+        // ประมวลผลเมื่อโหลดข้อมูลสำเร็จ
+        function onDataFetched(data) {
+            if(data.status === 'error') {
+                showError(data.message);
+                return;
+            }
+
+            allData = data;
+            document.getElementById('total-records').innerText = allData.length;
+            
+            // ตรวจหาจำนวนรายการสัญญาทั้งหมดที่กำลังจะหมดอายุล่วงหน้าภายใน 1 เดือน (30 วัน)
+            let expiringCount = allData.filter(item => item.isExpiring).length;
+            const alertBanner = document.getElementById('expiry-alert-banner');
+            
+            if (expiringCount > 0) {
+                document.getElementById('expiring-count').innerText = expiringCount;
+                alertBanner.classList.remove('hidden');
+                
+                // แจ้งเตือนด่วนผ่าน Pop-up ของ SweetAlert2 ทันทีที่เข้าหน้าระบบสำเร็จ
+                Swal.fire({
+                    icon: 'warning',
+                    title: 'แจ้งเตือนสัญญาเช่า!',
+                    text: `ตรวจพบทรัพย์ใกล้หมดสัญญาภายใน 1 เดือน จำนวน ทั้งสิ้น ${expiringCount} รายการ`,
+                    confirmButtonColor: '#b89247',
+                    confirmButtonText: 'ตรวจสอบรายการ'
+                });
+            } else {
+                alertBanner.classList.add('hidden');
+            }
+
+            populateDatalists();
+            applyFilters();
+
+            document.getElementById('loading').classList.add('hidden');
+            document.getElementById('main-content').classList.remove('hidden');
+        }
+
+        // เพิ่มคำแนะนำในช่องพิมพ์คีย์บอร์ดของช่อง คอนโด และรหัสทรัพย์
+        function populateDatalists() {
+            const dlNo = document.getElementById('dl-no');
+            const dlCondo = document.getElementById('dl-condo');
+            
+            let nos = [...new Set(allData.map(item => item.no).filter(Boolean))];
+            let condos = [...new Set(allData.map(item => item.condo).filter(Boolean))];
+            
+            dlNo.innerHTML = nos.map(n => `<option value="${n}"></option>`).join('');
+            dlCondo.innerHTML = condos.map(c => `<option value="${c}"></option>`).join('');
+        }
+
+        // ฟังก์ชันประมวลผลตัวกรอง/การค้นหาของระบบ
+        function applyFilters() {
+            const fNo = document.getElementById('f-no').value.trim().toLowerCase();
+            const fPropertyType = document.getElementById('f-propertyType').value;
+            const fPetFriendly = document.getElementById('f-petFriendly').value;
+            const fCondo = document.getElementById('f-condo').value.trim().toLowerCase();
+            const fRoom = document.getElementById('f-room').value.trim().toLowerCase();
+            const fRoomType = document.getElementById('f-roomType').value;
+            const fZone = document.getElementById('f-zone').value;
+            const fDistrict = document.getElementById('f-district').value.trim().toLowerCase();
+            const fSize = document.getElementById('f-size').value;
+            const fBed = document.getElementById('f-bed').value;
+            const fBath = document.getElementById('f-bath').value;
+            const fParking = document.getElementById('f-parking').value;
+            const fStatus = document.getElementById('f-status').value;
+            const fPrice = document.getElementById('f-price').value;
+            const fType = document.getElementById('f-type').value;
+            const fSales = document.getElementById('f-sales').value;
+
+            let filteredData = allData.filter(item => {
+                
+                // กรองเฉพาะห้องที่สัญญาใกล้จะหมดอายุหากผู้ใช้คลิกแบนเนอร์ด้านบน
+                if (showExpiringOnly && !item.isExpiring) return false;
+
+                let itemNo = (item.no || '').toString().toLowerCase();
+                let itemCondo = (item.condo || '').toString().toLowerCase();
+                let itemDistrict = (item.district || '').toString().toLowerCase();
+
+                let itemRoom = (item.room || '').toString().toLowerCase();
+
+                if (fNo && !itemNo.includes(fNo)) return false;
+                if (fCondo && !itemCondo.includes(fCondo)) return false;
+                if (fDistrict && !itemDistrict.includes(fDistrict)) return false;
+                if (fRoom && !itemRoom.includes(fRoom)) return false;
+
+                if (fPropertyType && item.propertyType !== fPropertyType) return false;
+                if (fPetFriendly && item.petFriendly !== fPetFriendly) return false;
+                if (fRoomType && item.roomType !== fRoomType) return false;
+                if (fZone && item.zone !== fZone) return false;
+                if (fStatus && item.status !== fStatus) return false;
+                if (fType && item.type !== fType) return false;
+                if (fSales && item.sales !== fSales) return false;
+
+                if (fBed && item.bed != fBed) return false;
+                if (fBath && item.bath != fBath) return false;
+                if (fParking && item.parking != fParking) return false;
+
+                if (fSize) {
+                    let itemSize = parseFloat(item.size) || 0;
+                    if (fSize === '20-30' && (itemSize < 20 || itemSize > 30)) return false;
+                    if (fSize === '30-50' && (itemSize <= 30 || itemSize > 50)) return false;
+                    if (fSize === '50+' && itemSize <= 50) return false;
+                }
+
+                if (fPrice) {
+                    let priceStr = (item.price || '').toString().replace(/,/g, '');
+                    let numMatch = priceStr.match(/\d+(\.\d+)?/);
+                    let itemPriceNum = numMatch ? parseFloat(numMatch[0]) : 0;
+
+                    if (fPrice === '5000-10000' && (itemPriceNum < 5000 || itemPriceNum > 10000)) return false;
+                    if (fPrice === '10000-15000' && (itemPriceNum <= 10000 || itemPriceNum > 15000)) return false;
+                    if (fPrice === '15000-20000' && (itemPriceNum <= 15000 || itemPriceNum > 20000)) return false;
+                    if (fPrice === '20000-25000' && (itemPriceNum <= 20000 || itemPriceNum > 25000)) return false;
+                    if (fPrice === '25000+' && itemPriceNum <= 25000) return false;
+                }
+
+                return true;
+            });
+
+            currentFilteredData = filteredData;
+            currentPage = 1;
+            renderPagination();
+        }
+
+        // ฟังก์ชันสร้าง UI การแบ่งหน้า
+        function renderPagination() {
+            const totalRecords = currentFilteredData.length;
+            const totalPages = Math.ceil(totalRecords / recordsPerPage) || 1;
+            
+            const startIndex = (currentPage - 1) * recordsPerPage;
+            const endIndex = startIndex + recordsPerPage;
+            const paginatedData = currentFilteredData.slice(startIndex, endIndex);
+            
+            renderTable(paginatedData, totalRecords);
+            
+            const paginationContainer = document.getElementById('pagination-container');
+            if (totalPages <= 1) {
+                paginationContainer.innerHTML = '';
+                return;
+            }
+            
+            let html = '<div class="flex flex-wrap justify-center items-center space-x-1.5">';
+            
+            // Prev
+            html += `<button onclick="changePage(${currentPage - 1})" class="px-3 py-1.5 rounded-md text-sm font-medium transition ${currentPage === 1 ? 'bg-gray-100 text-gray-400 cursor-not-allowed' : 'bg-white text-navy border border-gray-300 hover:bg-navy hover:text-white'}" ${currentPage === 1 ? 'disabled' : ''}>ก่อนหน้า</button>`;
+            
+            // Numbers
+            let startPage = Math.max(1, currentPage - 2);
+            let endPage = Math.min(totalPages, currentPage + 2);
+            
+            if (startPage > 1) {
+                html += `<button onclick="changePage(1)" class="px-3 py-1.5 rounded-md text-sm font-medium transition bg-white text-navy border border-gray-300 hover:bg-navy hover:text-white">1</button>`;
+                if (startPage > 2) html += `<span class="px-2 text-gray-500">...</span>`;
+            }
+            
+            for (let i = startPage; i <= endPage; i++) {
+                html += `<button onclick="changePage(${i})" class="px-3 py-1.5 rounded-md text-sm font-medium transition ${currentPage === i ? 'bg-navy text-white shadow border border-navy' : 'bg-white text-navy border border-gray-300 hover:bg-navy hover:text-white'}">${i}</button>`;
+            }
+            
+            if (endPage < totalPages) {
+                if (endPage < totalPages - 1) html += `<span class="px-2 text-gray-500">...</span>`;
+                html += `<button onclick="changePage(${totalPages})" class="px-3 py-1.5 rounded-md text-sm font-medium transition bg-white text-navy border border-gray-300 hover:bg-navy hover:text-white">${totalPages}</button>`;
+            }
+            
+            // Next
+            html += `<button onclick="changePage(${currentPage + 1})" class="px-3 py-1.5 rounded-md text-sm font-medium transition ${currentPage === totalPages ? 'bg-gray-100 text-gray-400 cursor-not-allowed' : 'bg-white text-navy border border-gray-300 hover:bg-navy hover:text-white'}" ${currentPage === totalPages ? 'disabled' : ''}>ถัดไป</button>`;
+            
+            html += '</div>';
+            paginationContainer.innerHTML = html;
+        }
+
+        // ฟังก์ชันเมื่อผู้ใช้กดเปลี่ยนหน้า
+        function changePage(page) {
+            const totalPages = Math.ceil(currentFilteredData.length / recordsPerPage) || 1;
+            if (page < 1 || page > totalPages) return;
+            currentPage = page;
+            renderPagination();
+            // เลื่อนจอกลับขึ้นไปข้างบนของตาราง
+            document.getElementById('data-container').scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+
+        // ฟังก์ชันเมื่อคลิกปุ่มกรองดูสัญญาหมดอายุล่วงหน้า 30 วัน
+        function filterExpiringOnly() {
+            showExpiringOnly = true;
+            applyFilters();
+        }
+
+        // ล้างค่าตัวคัดกรองทั้งหมดและดึงข้อมูลใหม่ทั้งหมดขึ้นมาแสดง
+        function clearFilters() {
+            showExpiringOnly = false;
+            document.getElementById('f-no').value = '';
+            document.getElementById('f-propertyType').value = '';
+            document.getElementById('f-petFriendly').value = '';
+            document.getElementById('f-condo').value = '';
+            document.getElementById('f-room').value = '';
+            document.getElementById('f-roomType').value = '';
+            document.getElementById('f-zone').value = '';
+            document.getElementById('f-district').value = '';
+            document.getElementById('f-size').value = '';
+            document.getElementById('f-bed').value = '';
+            document.getElementById('f-bath').value = '';
+            document.getElementById('f-parking').value = '';
+            document.getElementById('f-status').value = '';
+            document.getElementById('f-price').value = '';
+            document.getElementById('f-type').value = '';
+            document.getElementById('f-sales').value = '';
+            applyFilters();
+        }
+
+        // ฟังก์ชันสร้างการ์ดทรัพย์สินใน UI
+        function renderTable(data, totalRecords = 0) {
+            const container = document.getElementById('data-container');
+            const emptyMessage = document.getElementById('empty-message');
+            
+            container.innerHTML = '';
+            document.getElementById('filtered-records').innerText = totalRecords;
+
+            if (data.length === 0) {
+                emptyMessage.classList.remove('hidden');
+            } else {
+                emptyMessage.classList.add('hidden');
+                data.forEach(item => {
+                    let statusColor = "bg-gray-800 text-gray-300 border-gray-600";
+                    if(item.status === 'ห้องว่าง') statusColor = "bg-green-900/40 text-green-400 border-green-500/50";
+                    if(item.status === 'ไม่ว่าง') statusColor = "bg-red-900/40 text-red-400 border-red-500/50";
+                    if(item.status === 'รออัพเดต') statusColor = "bg-yellow-900/40 text-yellow-400 border-yellow-500/50";
+                    if(item.status === 'กำลังตกแต่ง') statusColor = "bg-blue-900/40 text-blue-400 border-blue-500/50";
+
+                    // ติดตั้ง Badge เตือนภัยสีส้มสะท้อนแสงหากสัญญาเหลือน้อยกว่า 30 วัน
+                    let expiryBadge = '';
+                    let cardBorderClass = "border-gold/40 hover:shadow-gold/20";
+                    if (item.isExpiring) {
+                        cardBorderClass = "border-amber-500 ring-1 ring-amber-500/40 shadow-md shadow-amber-500/10";
+                        expiryBadge = `<span class="bg-amber-500 text-navy px-2 py-0.5 rounded text-[11px] font-bold flex items-center shadow-sm"><i class="fa-solid fa-clock mr-1 animate-pulse"></i>ใกล้หมดสัญญา (${item.daysLeft} วัน)</span>`;
+                    }
+
+                    const card = document.createElement('div');
+                    card.className = `bg-navy border ${cardBorderClass} rounded-xl shadow-md transition-shadow duration-300 overflow-hidden flex flex-col relative`;
+                    
+                    // ป้องกันความเสียหายของ JSON สตริงจากการมีเครื่องหมาย " และ ' รวมถึงการเคาะบรรทัดใหม่
+                    const safeItemStr = JSON.stringify(item).replace(/\\/g, "\\\\").replace(/'/g, "\\'").replace(/"/g, '&quot;');
+
+                    card.innerHTML = `
+                        <div class="h-1.5 w-full bg-gold"></div>
+                        <div class="p-5 flex-grow">
+                            <div class="flex justify-between items-center mb-3">
+                                <div class="flex items-center space-x-1.5">
+                                    <span class="px-2.5 py-1 rounded-md text-[11px] font-bold border ${statusColor}">${item.status || 'ไม่ระบุ'}</span>
+                                    <span class="px-2.5 py-1 rounded-md text-[11px] font-bold border bg-gray-700 text-gray-200 border-gray-500">${item.propertyType || '-'}</span>
+                                    ${expiryBadge}
+                                </div>
+                                <span class="text-xs font-semibold text-gray-300 bg-navy-light px-2.5 py-1 rounded border border-gray-600">รหัส: ${item.no || '-'}</span>
+                            </div>
+                            
+                            <div class="mb-4">
+                                <h3 class="text-[17px] font-bold text-white leading-tight mb-1 line-clamp-2" title="${item.condo || ''}">${item.condo || 'ไม่ระบุชื่อคอนโด'}</h3>
+                                <div class="text-[13px] text-gray-400 mb-2"><i class="fa-solid fa-location-dot text-gold w-4 text-center mr-0.5"></i> ${item.zone || '-'} / ${item.district || '-'}</div>
+                                <div class="text-[19px] font-bold text-green-400">${item.price || '-'} <span class="text-[13px] font-medium text-gray-400 ml-1">(${item.type || '-'})</span></div>
+                            </div>
+
+                            <div class="grid grid-cols-2 gap-y-2 gap-x-4 text-[13px] mb-4 bg-navy-light p-3 rounded-lg border border-gold/20">
+                                <div><span class="text-gray-400 text-[11px] block">ประเภทห้อง</span><span class="font-medium text-white">${item.roomType || '-'}</span></div>
+                                <div><span class="text-gray-400 text-[11px] block">ขนาด</span><span class="font-medium text-white">${item.size ? item.size + ' ตร.ม.' : '-'}</span></div>
+                                <div class="col-span-2"><span class="text-gray-400 text-[11px] block">ตึก / ชั้น / ห้อง</span><span class="font-medium text-white">${item.building || '-'} / ชั้น ${item.floor || '-'} / ${item.room || '-'}</span></div>
+                            </div>
+
+                            <div class="flex items-center space-x-5 text-sm text-gray-300 mb-4 px-1 border-b border-gray-700 pb-4">
+                                <div class="flex items-center" title="ห้องนอน"><i class="fa-solid fa-bed text-gold text-lg mr-2"></i> <span class="font-bold text-base">${item.bed || '0'}</span></div>
+                                <div class="flex items-center" title="ห้องน้ำ"><i class="fa-solid fa-bath text-gold text-lg mr-2"></i> <span class="font-bold text-base">${item.bath || '0'}</span></div>
+                                <div class="flex items-center" title="ที่จอดรถ"><i class="fa-solid fa-car text-gold text-lg mr-2"></i> <span class="font-bold text-base">${item.parking || '0'}</span></div>
+                                ${item.petFriendly === 'Yes' ? `<div class="flex items-center text-green-400" title="รับสัตว์เลี้ยง"><i class="fa-solid fa-paw text-lg mr-2"></i></div>` : ''}
+                            </div>
+
+                            <div class="space-y-1.5 text-[12px] text-gray-400">
+                                <div class="flex items-start"><i class="fa-solid fa-user-tie w-5 mt-0.5 text-gold text-center"></i> <span>เซลส์: <span class="font-medium text-gray-200">${item.sales || '-'}</span></span></div>
+                                ${(item.leaseStart || item.leaseEnd) ? `<div class="flex items-start"><i class="fa-regular fa-calendar-days w-5 mt-0.5 text-gold text-center"></i> <span>สัญญา: <span class="font-medium text-gray-200">${item.leaseStart ? formatDateDisplay(item.leaseStart) : '-'}</span> ถึง <span class="font-medium ${item.isExpiring ? 'text-red-400 font-bold' : 'text-gray-200'}">${item.leaseEnd ? formatDateDisplay(item.leaseEnd) : '-'}</span></span></div>` : ''}
+                                ${item.remark ? `<div class="flex items-start"><i class="fa-regular fa-comment-dots w-5 mt-0.5 text-gold text-center"></i> <span class="line-clamp-2 italic text-gray-400" title="${item.remark}">${item.remark}</span></div>` : ''}
+                            </div>
+                        </div>
+
+                        <div class="bg-navy-light px-5 py-3 border-t border-gold/30 flex justify-between items-center mt-auto">
+                            <div class="flex space-x-3">
+                                ${item.facebook ? `<a href="${item.facebook}" target="_blank" class="text-blue-400 hover:text-blue-300 transition" title="ไปที่ Facebook"><i class="fa-brands fa-facebook text-2xl"></i></a>` : `<span class="text-gray-600"><i class="fa-brands fa-facebook text-2xl"></i></span>`}
+                                ${item.googleMap ? `<a href="${item.googleMap}" target="_blank" class="text-red-400 hover:text-red-300 transition" title="ไปที่ Google Map"><i class="fa-solid fa-location-dot text-2xl"></i></a>` : `<span class="text-gray-600"><i class="fa-solid fa-location-dot text-2xl"></i></span>`}
+                            </div>
+                            <div class="flex space-x-2">
+                                ${canViewOwner ? `
+                                <button onclick="viewOwner('${safeItemStr}')" class="bg-transparent border border-green-500/50 text-green-400 hover:bg-green-500 hover:text-white px-3 py-1.5 rounded text-xs font-semibold transition flex items-center shadow-sm">
+                                    <i class="fa-solid fa-address-book mr-1.5"></i> เจ้าของ
+                                </button>
+                                ` : ''}
+                                <button onclick="editRecord('${safeItemStr}')" class="bg-transparent border border-gold text-gold hover:bg-gold hover:text-navy px-3 py-1.5 rounded text-xs font-semibold transition flex items-center shadow-sm">
+                                    <i class="fa-solid fa-pen mr-1.5"></i> แก้ไข
+                                </button>
+                                <button onclick="deleteRecord(${item.rowIndex})" class="bg-transparent border border-red-500/50 text-red-400 hover:bg-red-500 hover:text-white px-3 py-1.5 rounded text-xs font-semibold transition flex items-center shadow-sm">
+                                    <i class="fa-solid fa-trash mr-1.5"></i> ลบ
+                                </button>
+                            </div>
+                        </div>
+                    `;
+                    container.appendChild(card);
+                });
+            }
+        }
+
+        // จัดการ Modal เปิด/ปิด
+        function openModal(mode) {
+            document.getElementById('data-form').reset();
+            document.getElementById('rowIndex').value = '';
+            document.getElementById('no').value = '';
+            
+            // Clear owner fields
+            document.getElementById('ownerName').value = '';
+            document.getElementById('ownerPhone').value = '';
+            document.getElementById('ownerLine').value = '';
+            document.getElementById('ownerFacebook').value = '';
+
+            if(mode === 'add') {
+                document.getElementById('modal-title').innerText = 'เพิ่มข้อมูล Condo ใหม่';
+            }
+            document.getElementById('form-modal').classList.remove('hidden');
+        }
+
+        function closeModal() {
+            document.getElementById('form-modal').classList.add('hidden');
+        }
+
+        // ดึงข้อมูลการ์ดทรัพย์มาใส่ใน Form Modal เพื่อทำการแก้ไข
+        function editRecord(itemEscapedStr) {
+            const item = JSON.parse(itemEscapedStr);
+            
+            document.getElementById('modal-title').innerText = 'แก้ไขข้อมูล (รหัสทรัพย์ ' + item.no + ')';
+            
+            document.getElementById('rowIndex').value = item.rowIndex;
+            document.getElementById('no').value = item.no;
+            document.getElementById('propertyType').value = item.propertyType || '';
+            document.getElementById('condo').value = item.condo;
+            document.getElementById('roomType').value = item.roomType;
+            document.getElementById('building').value = item.building;
+            document.getElementById('floor').value = item.floor;
+            document.getElementById('room').value = item.room;
+            document.getElementById('size').value = item.size;
+            document.getElementById('bed').value = item.bed;
+            document.getElementById('bath').value = item.bath;
+            document.getElementById('parking').value = item.parking;
+            document.getElementById('zone').value = item.zone;
+            document.getElementById('district').value = item.district;
+            document.getElementById('sales').value = item.sales;
+            document.getElementById('status').value = item.status;
+            document.getElementById('type').value = item.type;
+            document.getElementById('price').value = item.price;
+            
+            document.getElementById('leaseStart').value = normalizeDateForInput(item.leaseStart);
+            document.getElementById('leaseEnd').value = normalizeDateForInput(item.leaseEnd);
+            
+            document.getElementById('facebook').value = item.facebook;
+            document.getElementById('googleMap').value = item.googleMap;
+            document.getElementById('remark').value = item.remark;
+            
+            // Checkbox สัตว์เลี้ยง
+            document.getElementById('petFriendly').checked = (item.petFriendly === 'Yes');
+
+            document.getElementById('form-modal').classList.remove('hidden');
+        }
+
+        // Submit ฟอร์มส่งไปเซฟที่ Google Sheets หลังบ้าน
+        function submitForm(e) {
+            e.preventDefault();
+            const form = document.getElementById('data-form');
+            const formData = new FormData(form);
+            const formObj = Object.fromEntries(formData.entries());
+
+            const btnSubmit = document.getElementById('btn-submit');
+            const originalBtnText = btnSubmit.innerHTML;
+            btnSubmit.innerHTML = `<i class="fa-solid fa-spinner fa-spin mr-2"></i> กำลังบันทึก...`;
+            btnSubmit.disabled = true;
+
+            if (typeof google !== 'undefined') {
+                google.script.run
+                    .withSuccessHandler(function(res) {
+                        btnSubmit.innerHTML = originalBtnText;
+                        btnSubmit.disabled = false;
+                        if(res.status === 'success') {
+                            closeModal();
+                            Swal.fire({ icon: 'success', title: 'สำเร็จ!', text: res.message, confirmButtonColor: '#111d2e', timer: 2000 });
+                            loadData();
+                        } else {
+                            showError(res.message);
+                        }
+                    })
+                    .withFailureHandler(function(error) {
+                        btnSubmit.innerHTML = originalBtnText;
+                        btnSubmit.disabled = false;
+                        showError(error);
+                    })
+                    .saveData(formObj);
+            }
+        }
+
+        // ลบรายการแถวข้อมูลใน Google Sheets
+        function deleteRecord(rowIndex) {
+            Swal.fire({
+                title: 'ยืนยันการลบข้อมูล?',
+                text: "หากลบแล้วจะไม่สามารถกู้คืนกลับมาได้อีกครั้ง!",
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#d33',
+                cancelButtonColor: '#9ca3af',
+                confirmButtonText: 'ใช่, ลบเลย!',
+                cancelButtonText: 'ยกเลิก'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    Swal.fire({ title: 'กำลังลบข้อมูล...', allowOutsideClick: false, didOpen: () => { Swal.showLoading() } });
+                    if (typeof google !== 'undefined') {
+                        google.script.run
+                            .withSuccessHandler(function(res) {
+                                if(res.status === 'success') {
+                                    Swal.fire({ icon: 'success', title: 'ลบสำเร็จ!', showConfirmButton: false, timer: 1500 });
+                                    loadData();
+                                } else {
+                                    showError(res.message);
+                                }
+                            })
+                            .withFailureHandler(showError)
+                            .deleteData(rowIndex);
+                    }
+                }
+            });
+        }
+
+        // ฟังก์ชันช่วยสำหรับการคัดลอกลิงก์ (Facebook / Google Map) ของแต่ละห้อง
+        function copyLink(text) {
+            const el = document.createElement('textarea');
+            el.value = text;
+            document.body.appendChild(el);
+            el.select();
+            document.execCommand('copy');
+            document.body.removeChild(el);
+            
+            const Toast = Swal.mixin({ toast: true, position: 'top-end', showConfirmButton: false, timer: 2000, timerProgressBar: true });
+            Toast.fire({ icon: 'success', title: 'คัดลอกลิงก์เรียบร้อยแล้ว' });
+        }
+
+        // แปลงวันที่ไปแสดงผลเป็น DD/MM/YYYY
+        function formatDateDisplay(dateString) {
+            if(!dateString) return '';
+            let str = String(dateString);
+            let match = str.match(/^(\d{4})-(\d{2})-(\d{2})/);
+            if(match) return `${match[3]}/${match[2]}/${match[1]}`;
+            try {
+                let d = new Date(str);
+                if (!isNaN(d.getTime())) {
+                    let dd = String(d.getDate()).padStart(2, '0');
+                    let mm = String(d.getMonth() + 1).padStart(2, '0');
+                    return `${dd}/${mm}/${d.getFullYear()}`;
+                }
+            } catch(e) {}
+            return str;
+        }
+
+        // ปรับแก้ข้อมูลเพื่อความถูกต้องในการป้อนเข้าช่อง input type="date"
+        function normalizeDateForInput(dateVal) {
+            if (!dateVal) return '';
+            let str = String(dateVal);
+            let match = str.match(/^(\d{4})-(\d{2})-(\d{2})/);
+            if (match) return match[0];
+            try {
+                let d = new Date(str);
+                if (!isNaN(d.getTime())) {
+                    let mm = String(d.getMonth() + 1).padStart(2, '0');
+                    let dd = String(d.getDate()).padStart(2, '0');
+                    return `${d.getFullYear()}-${mm}-${dd}`;
+                }
+            } catch(e) {}
+            return '';
+        }
+
+        // ฟังก์ชันแจ้งเตือนข้อผิดพลาด (Error handling)
+        function showError(msg) {
+            Swal.fire({ icon: 'error', title: 'เกิดข้อผิดพลาด', text: msg, confirmButtonColor: '#111d2e' });
+        }
+    </script>
+</body>
+</html>

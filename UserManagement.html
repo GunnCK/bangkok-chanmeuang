@@ -1,0 +1,358 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>จัดการผู้ใช้งาน - Bangkok Chanmeuang</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- SweetAlert2 -->
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700&display=swap" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: { extend: { colors: { navy: { DEFAULT: '#111d2e', light: '#1e2f47' }, gold: { DEFAULT: '#b89247', light: '#cfa85e', hover: '#a07d39' } } } }
+        }
+    </script>
+    <style>
+        body { font-family: 'Prompt', sans-serif; background-color: #f3f4f6; }
+        .font-logo { font-family: 'Playfair Display', serif; }
+    </style>
+</head>
+<body class="flex flex-col min-h-screen">
+
+    <!-- Header & Navigation -->
+    <header class="bg-navy text-white shadow-md sticky top-0 z-40 border-b-4 border-gold">
+        <div class="w-full px-4 sm:px-6 lg:px-8 py-4 flex justify-between items-center">
+            <div class="flex items-center">
+                <img src="https://lh3.googleusercontent.com/d/12hJFK7AYOuvL3xHFGhmeRyMv2uS8159J" alt="Logo" class="h-10 sm:h-12 w-auto mr-3 object-contain rounded-md bg-white p-1 shadow-sm" onerror="this.onerror=null; this.src='https://drive.google.com/thumbnail?id=12hJFK7AYOuvL3xHFGhmeRyMv2uS8159J&sz=w500';">
+                <div class="flex flex-col">
+                    <span class="text-2xl font-logo font-bold tracking-[0.1em] uppercase leading-none">Bangkok</span>
+                    <span class="text-[0.65rem] font-medium tracking-[0.25em] text-gold uppercase mt-1">Chanmeuang</span>
+                </div>
+            </div>
+            </div>
+            <div class="flex items-center space-x-3">
+                <div class="hidden md:flex items-center text-sm mr-2 border-r border-gray-600 pr-4">
+                    <div class="w-8 h-8 rounded-full bg-navy-light border border-gold flex items-center justify-center text-gold mr-3 shadow-sm">
+                        <i class="fa-solid fa-user"></i>
+                    </div>
+                    <div class="flex flex-col">
+                        <span id="display-userName" class="font-semibold text-gray-200 leading-tight">-</span>
+                        <span id="display-userRole" class="text-[10px] text-gray-400 font-medium"></span>
+                    </div>
+                </div>
+                <button onclick="goBack()" class="bg-gray-600 hover:bg-gray-500 text-white px-4 py-2 rounded-lg font-medium shadow transition duration-200 flex items-center text-sm sm:text-base">
+                    <i class="fa-solid fa-arrow-left mr-2"></i> กลับหน้าหลัก
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content Area -->
+    <main class="flex-grow max-w-[100%] w-full mx-auto p-4 sm:p-6 lg:p-8">
+        
+        <!-- Loading Indicator -->
+        <div id="loading" class="flex flex-col items-center justify-center py-20">
+            <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-navy mb-4"></div>
+            <p class="text-gray-600 font-medium">กำลังโหลดข้อมูลผู้ใช้งาน...</p>
+        </div>
+
+        <div id="main-content" class="hidden">
+            <div class="flex justify-between items-end mb-4 px-1">
+                <h2 class="text-lg font-bold text-navy border-l-4 border-gold pl-3">จัดการผู้ใช้งานในระบบ</h2>
+                <button onclick="openModal('add')" class="bg-gold hover:bg-gold-hover text-white px-4 py-2 rounded-lg font-medium shadow transition flex items-center text-sm sm:text-base">
+                    <i class="fa-solid fa-user-plus mr-2"></i> เพิ่มผู้ใช้งาน
+                </button>
+            </div>
+
+            <!-- Table or Grid -->
+            <div class="bg-white rounded-xl shadow overflow-hidden overflow-x-auto border border-gray-200">
+                <table class="min-w-full divide-y divide-gray-200 text-sm">
+                    <thead class="bg-navy text-white text-left">
+                        <tr>
+                            <th class="px-6 py-4 font-semibold tracking-wide">Username</th>
+                            <th class="px-6 py-4 font-semibold tracking-wide">อีเมล (Gmail)</th>
+                            <th class="px-6 py-4 font-semibold tracking-wide">ชื่อ-นามสกุล</th>
+                            <th class="px-6 py-4 font-semibold tracking-wide">บทบาท (Role)</th>
+                            <th class="px-6 py-4 font-semibold tracking-wide">สถานะ</th>
+                            <th class="px-6 py-4 font-semibold tracking-wide text-right">จัดการ</th>
+                        </tr>
+                    </thead>
+                    <tbody id="user-table-body" class="bg-white divide-y divide-gray-200">
+                        <!-- Data rows injected here -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </main>
+
+    <!-- Modal Form -->
+    <div id="form-modal" class="hidden fixed inset-0 bg-black/60 backdrop-blur-sm z-50 overflow-y-auto">
+        <div class="flex items-center justify-center min-h-screen px-4 py-8">
+            <div class="bg-white rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden transform transition-all border border-gray-100">
+                
+                <div class="bg-navy px-6 py-4 flex justify-between items-center border-b-4 border-gold">
+                    <h2 class="text-xl font-bold text-white flex items-center" id="modal-title">
+                        <i class="fa-solid fa-user-edit mr-3 text-gold"></i>ข้อมูลผู้ใช้งาน
+                    </h2>
+                    <button type="button" onclick="closeModal()" class="text-gray-300 hover:text-white transition">
+                        <i class="fa-solid fa-xmark text-2xl"></i>
+                    </button>
+                </div>
+                
+                <form id="data-form" onsubmit="handleFormSubmit(event)" class="p-6">
+                    <input type="hidden" id="rowIndex" name="rowIndex">
+                    
+                    <div class="space-y-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Username <span class="text-red-500">*</span></label>
+                            <input type="text" id="username" name="username" required class="w-full border border-gray-300 rounded-lg p-2 focus:ring-2 focus:ring-blue-500 outline-none">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Password <span id="password-req" class="text-red-500">*</span></label>
+                            <input type="text" id="password" name="password" required placeholder="เว้นว่างไว้หากไม่ต้องการเปลี่ยนรหัสผ่าน (เฉพาะตอนแก้ไข)" class="w-full border border-gray-300 rounded-lg p-2 focus:ring-2 focus:ring-blue-500 outline-none">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">อีเมล (Gmail) <span class="text-red-500">*</span></label>
+                            <input type="email" id="email" name="email" required class="w-full border border-gray-300 rounded-lg p-2 focus:ring-2 focus:ring-blue-500 outline-none">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">ชื่อ-นามสกุล <span class="text-red-500">*</span></label>
+                            <input type="text" id="name" name="name" required class="w-full border border-gray-300 rounded-lg p-2 focus:ring-2 focus:ring-blue-500 outline-none">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">บทบาท (Role) <span class="text-red-500">*</span></label>
+                            <select id="role" name="role" required class="w-full border border-gray-300 rounded-lg p-2 focus:ring-2 focus:ring-blue-500 outline-none bg-white">
+                                <option value="System Admin">System Admin</option>
+                                <option value="Admin">Admin</option>
+                                <option value="Sales">Sales</option>
+                                <option value="User">User</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">สถานะ <span class="text-red-500">*</span></label>
+                            <select id="status" name="status" required class="w-full border border-gray-300 rounded-lg p-2 focus:ring-2 focus:ring-blue-500 outline-none bg-white">
+                                <option value="Active">Active (เปิดใช้งาน)</option>
+                                <option value="Inactive">Inactive (ระงับการใช้งาน)</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="mt-6 flex justify-end gap-3 pt-4 border-t border-gray-200">
+                        <button type="button" onclick="closeModal()" class="px-5 py-2 bg-gray-200 hover:bg-gray-300 text-gray-700 rounded-lg font-medium transition">ยกเลิก</button>
+                        <button type="submit" id="btn-submit" class="px-5 py-2 bg-navy hover:bg-navy-light text-white rounded-lg font-medium shadow transition flex items-center">
+                            <i class="fa-solid fa-save mr-2"></i> บันทึกข้อมูล
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let allUsers = [];
+
+        document.addEventListener('DOMContentLoaded', () => {
+            if (sessionStorage.getItem('isLoggedIn') !== 'true') {
+                goLogin();
+                return;
+            }
+            if (sessionStorage.getItem('userRole') !== 'System Admin') {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'ปฏิเสธการเข้าถึง',
+                    text: 'เฉพาะสิทธิ์ System Admin เท่านั้นที่เข้าใช้งานหน้านี้ได้',
+                    confirmButtonColor: '#111d2e'
+                }).then(() => { goBack(); });
+                return;
+            }
+
+            // เซ็ตชื่อผู้ใช้และสิทธิ์ที่ Header
+            const userName = sessionStorage.getItem('userName') || 'System Admin';
+            const role = sessionStorage.getItem('userRole') || 'System Admin';
+            document.getElementById('display-userName').innerText = userName;
+            document.getElementById('display-userRole').innerText = role;
+
+            loadData();
+        });
+
+        function goLogin() {
+            if (typeof google !== 'undefined') {
+                google.script.run.withSuccessHandler(function(url) {
+                    window.top.location.href = url + '?page=Login';
+                }).getWebAppUrl();
+            }
+        }
+
+        function goBack() {
+            if (typeof google !== 'undefined') {
+                google.script.run.withSuccessHandler(function(url) {
+                    window.top.location.href = url + '?page=index';
+                }).getWebAppUrl();
+            }
+        }
+
+        function loadData() {
+            document.getElementById('loading').classList.remove('hidden');
+            document.getElementById('main-content').classList.add('hidden');
+            
+            if (typeof google !== 'undefined') {
+                google.script.run.withSuccessHandler(onDataFetched).withFailureHandler(showError).getUsers();
+            } else {
+                onDataFetched([
+                    { rowIndex: 2, username: 'chotdecha.k', password: '123', name: 'Chotdecha K.', role: 'System Admin', status: 'Active' }
+                ]);
+            }
+        }
+
+        function onDataFetched(data) {
+            if(data && data.status === 'error') {
+                showError(data.message);
+                return;
+            }
+            allUsers = data;
+            renderTable(allUsers);
+            document.getElementById('loading').classList.add('hidden');
+            document.getElementById('main-content').classList.remove('hidden');
+        }
+
+        function renderTable(data) {
+            const tbody = document.getElementById('user-table-body');
+            tbody.innerHTML = '';
+            
+            data.forEach(user => {
+                const safeUserStr = JSON.stringify(user).replace(/'/g, "\\'").replace(/"/g, '&quot;');
+                const tr = document.createElement('tr');
+                tr.className = "hover:bg-gray-50 transition";
+                
+                let statusBadge = user.status.toLowerCase() === 'active' || user.status === 'เปิดใช้งาน' 
+                    ? '<span class="px-3 py-1 text-[11px] font-bold text-green-700 bg-green-100 rounded-full border border-green-200">Active</span>'
+                    : '<span class="px-3 py-1 text-[11px] font-bold text-red-700 bg-red-100 rounded-full border border-red-200">Inactive</span>';
+
+                tr.innerHTML = `
+                    <td class="px-6 py-4 whitespace-nowrap text-navy font-bold">${user.username}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-gray-600">${user.email || '-'}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-gray-700">${user.name}</td>
+                    <td class="px-6 py-4 whitespace-nowrap"><span class="px-2.5 py-1 text-xs font-semibold text-navy bg-gray-200 rounded border border-gray-300">${user.role}</span></td>
+                    <td class="px-6 py-4 whitespace-nowrap">${statusBadge}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-right space-x-2">
+                        <button onclick="openModal('edit', '${safeUserStr}')" class="text-blue-600 hover:text-blue-800 transition p-2 bg-blue-50 rounded shadow-sm border border-blue-100" title="แก้ไข">
+                            <i class="fa-solid fa-pen-to-square"></i>
+                        </button>
+                        ${user.username !== 'chotdecha.k' ? `
+                        <button onclick="deleteData(${user.rowIndex})" class="text-red-600 hover:text-red-800 transition p-2 bg-red-50 rounded shadow-sm border border-red-100" title="ลบ">
+                            <i class="fa-solid fa-trash-can"></i>
+                        </button>` : `<button disabled class="text-gray-300 p-2 bg-gray-50 rounded border border-gray-100 cursor-not-allowed" title="บัญชีนี้ไม่สามารถลบได้"><i class="fa-solid fa-trash-can"></i></button>`}
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        function openModal(mode, userStr = null) {
+            document.getElementById('data-form').reset();
+            document.getElementById('rowIndex').value = '';
+            
+            if(mode === 'add') {
+                document.getElementById('modal-title').innerHTML = '<i class="fa-solid fa-user-plus mr-3 text-gold"></i>เพิ่มผู้ใช้งานใหม่';
+                document.getElementById('username').readOnly = false;
+                document.getElementById('username').classList.remove('bg-gray-100');
+                
+                document.getElementById('password').required = true;
+                document.getElementById('password-req').classList.remove('hidden');
+            } else {
+                document.getElementById('modal-title').innerHTML = '<i class="fa-solid fa-user-edit mr-3 text-gold"></i>แก้ไขข้อมูลผู้ใช้งาน';
+                const user = JSON.parse(userStr);
+                document.getElementById('rowIndex').value = user.rowIndex;
+                document.getElementById('username').value = user.username;
+                document.getElementById('password').value = ''; // ว่างไว้เพื่อไม่ให้เห็น Hash หรือถ้าผู้ใช้ไม่กรอกจะได้รู้ว่าไม่เปลี่ยนรหัส
+                document.getElementById('email').value = user.email || '';
+                document.getElementById('name').value = user.name;
+                document.getElementById('role').value = user.role;
+                document.getElementById('status').value = user.status;
+                
+                document.getElementById('password').required = false;
+                document.getElementById('password-req').classList.add('hidden');
+                
+                if (user.username === 'chotdecha.k') {
+                    document.getElementById('username').readOnly = true;
+                    document.getElementById('username').classList.add('bg-gray-100');
+                    document.getElementById('role').classList.add('bg-gray-100');
+                    document.getElementById('role').style.pointerEvents = "none";
+                } else {
+                    document.getElementById('role').classList.remove('bg-gray-100');
+                    document.getElementById('role').style.pointerEvents = "auto";
+                }
+            }
+            document.getElementById('form-modal').classList.remove('hidden');
+        }
+
+        function closeModal() {
+            document.getElementById('form-modal').classList.add('hidden');
+        }
+
+        function handleFormSubmit(e) {
+            e.preventDefault();
+            Swal.fire({ title: 'กำลังบันทึกข้อมูล...', allowOutsideClick: false, didOpen: () => { Swal.showLoading(); } });
+            
+            const formObj = {
+                rowIndex: document.getElementById('rowIndex').value,
+                username: document.getElementById('username').value.trim(),
+                password: document.getElementById('password').value.trim(),
+                email: document.getElementById('email').value.trim(),
+                name: document.getElementById('name').value.trim(),
+                role: document.getElementById('role').value,
+                status: document.getElementById('status').value
+            };
+
+            if (typeof google !== 'undefined') {
+                google.script.run.withSuccessHandler(res => {
+                    if(res.status === 'success') {
+                        Swal.fire({ icon: 'success', title: 'บันทึกสำเร็จ!', showConfirmButton: false, timer: 1500 });
+                        closeModal();
+                        loadData();
+                    } else {
+                        showError(res.message);
+                    }
+                }).withFailureHandler(showError).saveUserData(formObj);
+            }
+        }
+
+        function deleteData(rowIndex) {
+            Swal.fire({
+                title: 'ยืนยันการลบ?',
+                text: "ข้อมูลผู้ใช้งานนี้จะถูกลบถาวร ไม่สามารถกู้คืนได้",
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#d33',
+                cancelButtonColor: '#3085d6',
+                confirmButtonText: 'ลบข้อมูล!',
+                cancelButtonText: 'ยกเลิก'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    Swal.fire({ title: 'กำลังลบข้อมูล...', allowOutsideClick: false, didOpen: () => { Swal.showLoading(); } });
+                    if (typeof google !== 'undefined') {
+                        google.script.run.withSuccessHandler(res => {
+                            if(res.status === 'success') {
+                                Swal.fire({ icon: 'success', title: 'ลบสำเร็จ!', showConfirmButton: false, timer: 1500 });
+                                loadData();
+                            } else {
+                                showError(res.message);
+                            }
+                        }).withFailureHandler(showError).deleteUserData(rowIndex);
+                    }
+                }
+            });
+        }
+
+        function showError(msg) {
+            Swal.fire({ icon: 'error', title: 'ผิดพลาด!', text: msg, confirmButtonColor: '#111d2e' });
+        }
+    </script>
+</body>
+</html>
