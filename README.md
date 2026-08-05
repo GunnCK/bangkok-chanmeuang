@@ -42,6 +42,15 @@ A comprehensive, serverless web application designed to manage real estate and c
 - **Property Listings Overview**
   ![Main Dashboard 2](dashboard2.png)
 
+- **Add Property Modal**
+  ![Add Property Modal](model_add.png)
+
+- **Edit Property Modal**
+  ![Edit Property Modal](model_edit.png)
+
+- **User Management Interface**
+  ![User Management Interface](user.png)
+
 ## ⚙️ Setup & Installation (Local Development)
 
 Since this project utilizes Google Apps Script, it is deployed via the Google Cloud / Workspace ecosystem. 
