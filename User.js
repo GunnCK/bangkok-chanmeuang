@@ -32,11 +32,15 @@ function verifyLogin(username, password) {
       
       // ตรวจสอบการล็อกอินกับข้อมูลเริ่มต้นในกรณีที่เพิ่งสร้างชีตใหม่
       if (username === "chotdecha.k" && password === "gunn020643") {
+        const token = Utilities.getUuid();
+        const cache = CacheService.getScriptCache();
+        cache.put(token, JSON.stringify({ name: "Chotdecha K.", role: "System Admin", username: "chotdecha.k" }), 21600);
         return { 
           success: true, 
           name: "Chotdecha K.", 
           role: "System Admin",
           username: "chotdecha.k",
+          token: token,
           url: ScriptApp.getService().getUrl()
         };
       }
@@ -69,11 +73,17 @@ function verifyLogin(username, password) {
            sheet.getRange(i + 1, 2).setValue(hashedPassword);
         }
 
+        const token = Utilities.getUuid();
+        const cache = CacheService.getScriptCache();
+        const userData = { name: sheetName, role: sheetRole, username: sheetUsername };
+        cache.put(token, JSON.stringify(userData), 21600); // เก็บข้อมูล Session ไว้ 6 ชั่วโมง
+
         return { 
           success: true, 
           name: sheetName, 
           role: sheetRole,
           username: sheetUsername,
+          token: token,
           url: ScriptApp.getService().getUrl()
         };
       }
@@ -84,6 +94,17 @@ function verifyLogin(username, password) {
   } catch (error) {
     return { success: false, message: "เกิดข้อผิดพลาด: " + error.toString() };
   }
+}
+
+// ฟังก์ชันสำหรับดึงข้อมูลผู้ใช้งานจาก Session Token (ใช้แก้ปัญหา Safari Block SessionStorage)
+function getUserFromToken(token) {
+  if (!token) return null;
+  const cache = CacheService.getScriptCache();
+  const cachedStr = cache.get(token);
+  if (cachedStr) {
+    return JSON.parse(cachedStr);
+  }
+  return null;
 }
 
 // ฟังก์ชันดึงข้อมูลผู้ใช้งานทั้งหมด

@@ -11,8 +11,10 @@ function doGet(e) {
   
   const title = page === 'Login' ? 'Bangkok Chanmeuang - Login' : 'Bangkok Chanmeuang - Condo Listing';
   
-  return HtmlService.createTemplateFromFile(page)
-    .evaluate()
+  const template = HtmlService.createTemplateFromFile(page);
+  template.token = e.parameter.token || '';
+  
+  return template.evaluate()
     .setTitle(title)
     .addMetaTag('viewport', 'width=device-width, initial-scale=1.0');
 }

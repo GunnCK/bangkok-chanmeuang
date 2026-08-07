@@ -96,9 +96,12 @@
     </div>
 
     <script>
+        const SERVER_TOKEN = "<?= typeof token !== 'undefined' ? token : '' ?>";
+
         // เช็คสถานะตอนโหลดหน้าจอ
         document.addEventListener('DOMContentLoaded', () => {
-            if (sessionStorage.getItem('userRole') === 'System Admin') {
+            const role = sessionStorage.getItem('userRole');
+            if (role === 'System Admin') {
                 document.getElementById('admin-panel').classList.remove('hidden');
             }
         });
@@ -108,9 +111,10 @@
             document.getElementById('loading').classList.remove('hidden');
             document.querySelector('#loading p').innerText = 'กำลังพาไปหน้าจัดการผู้ใช้งาน...';
             
+            const currentToken = SERVER_TOKEN || sessionStorage.getItem('token') || '';
             if (typeof google !== 'undefined') {
                 google.script.run.withSuccessHandler(function(url) {
-                    window.top.location.href = url + '?page=UserManagement';
+                    window.open(url + '?page=UserManagement' + (currentToken ? '&token=' + currentToken : ''), '_top');
                 }).getWebAppUrl();
             }
         }
@@ -148,11 +152,16 @@
                         document.getElementById('loading').classList.add('hidden');
                         
                         if (response.success) {
-                            // เก็บสถานะการล็อกอินไว้ใน Session Storage
-                            sessionStorage.setItem('isLoggedIn', 'true');
-                            sessionStorage.setItem('userName', response.name);
-                            sessionStorage.setItem('userRole', response.role);
-                            sessionStorage.setItem('username', response.username);
+                            try {
+                                // เก็บสถานะการล็อกอินไว้ใน Session Storage
+                                sessionStorage.setItem('isLoggedIn', 'true');
+                                sessionStorage.setItem('userName', response.name);
+                                sessionStorage.setItem('userRole', response.role);
+                                sessionStorage.setItem('username', response.username);
+                                if(response.token) sessionStorage.setItem('token', response.token);
+                            } catch (e) {
+                                // ปล่อยผ่านไปได้เลย เพราะเราส่งข้อมูลผ่าน Token ทาง URL แทนแล้ว
+                            }
                             
                             Swal.fire({
                                 icon: 'success',
@@ -172,11 +181,11 @@
                                 document.querySelector('#loading p').innerText = 'กำลังพาท่านเข้าสู่ระบบ...';
                                 
                                 if (response.url) {
-                                    window.top.location.href = response.url + '?page=index';
+                                    window.open(response.url + '?page=index' + (response.token ? '&token=' + response.token : ''), '_top');
                                 } else {
                                     // สำรองไว้กรณีเก่า
                                     google.script.run.withSuccessHandler(function(url) {
-                                        window.top.location.href = url + '?page=index';
+                                        window.open(url + '?page=index' + (response.token ? '&token=' + response.token : ''), '_top');
                                     }).getWebAppUrl();
                                 }
                             });

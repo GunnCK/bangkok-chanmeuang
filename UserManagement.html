@@ -154,14 +154,11 @@
     </div>
 
     <script>
+        const SERVER_TOKEN = "<?= typeof token !== 'undefined' ? token : '' ?>";
         let allUsers = [];
 
-        document.addEventListener('DOMContentLoaded', () => {
-            if (sessionStorage.getItem('isLoggedIn') !== 'true') {
-                goLogin();
-                return;
-            }
-            if (sessionStorage.getItem('userRole') !== 'System Admin') {
+        function initApp(userName, role) {
+            if (role !== 'System Admin') {
                 Swal.fire({
                     icon: 'error',
                     title: 'ปฏิเสธการเข้าถึง',
@@ -171,27 +168,58 @@
                 return;
             }
 
-            // เซ็ตชื่อผู้ใช้และสิทธิ์ที่ Header
-            const userName = sessionStorage.getItem('userName') || 'System Admin';
-            const role = sessionStorage.getItem('userRole') || 'System Admin';
-            document.getElementById('display-userName').innerText = userName;
-            document.getElementById('display-userRole').innerText = role;
+            document.getElementById('display-userName').innerText = userName || 'System Admin';
+            document.getElementById('display-userRole').innerText = role || 'System Admin';
 
             loadData();
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            const activeToken = SERVER_TOKEN || (function(){ try{ return sessionStorage.getItem('token'); }catch(e){ return ''; } })();
+            
+            if (activeToken) {
+                if (typeof google !== 'undefined') {
+                    google.script.run.withSuccessHandler(function(userData) {
+                        if (userData) {
+                            try {
+                                sessionStorage.setItem('isLoggedIn', 'true');
+                                sessionStorage.setItem('userName', userData.name);
+                                sessionStorage.setItem('userRole', userData.role);
+                                sessionStorage.setItem('username', userData.username);
+                                sessionStorage.setItem('token', activeToken);
+                            } catch(e) {}
+                            initApp(userData.name, userData.role);
+                        } else {
+                            goLogin();
+                        }
+                    }).getUserFromToken(activeToken);
+                }
+            } else {
+                let loggedIn = false;
+                try { loggedIn = sessionStorage.getItem('isLoggedIn') === 'true'; } catch(e){}
+                if (loggedIn) {
+                    try {
+                        initApp(sessionStorage.getItem('userName'), sessionStorage.getItem('userRole'));
+                    } catch(e) { goLogin(); }
+                } else {
+                    goLogin();
+                }
+            }
         });
 
         function goLogin() {
             if (typeof google !== 'undefined') {
                 google.script.run.withSuccessHandler(function(url) {
-                    window.top.location.href = url + '?page=Login';
+                    window.open(url + '?page=Login', '_top');
                 }).getWebAppUrl();
             }
         }
 
         function goBack() {
+            const activeToken = SERVER_TOKEN || (function(){ try{ return sessionStorage.getItem('token'); }catch(e){ return ''; } })();
             if (typeof google !== 'undefined') {
                 google.script.run.withSuccessHandler(function(url) {
-                    window.top.location.href = url + '?page=index';
+                    window.open(url + '?page=index' + (activeToken ? '&token=' + activeToken : ''), '_top');
                 }).getWebAppUrl();
             }
         }

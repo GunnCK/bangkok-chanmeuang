@@ -538,6 +538,7 @@
     </div>
 
     <script>
+        const SERVER_TOKEN = "<?= typeof token !== 'undefined' ? token : '' ?>";
         let allData = [];
         let currentFilteredData = [];
         let currentPage = 1;
@@ -545,41 +546,65 @@
         let showExpiringOnly = false; // สถานะสำหรับสลับเลือกกรองดูเฉพาะทรัพย์สินที่ใกล้หมดสัญญา
         let canViewOwner = false; // เก็บสถานะสิทธิ์การดูข้อมูลเจ้าของ
 
-        document.addEventListener('DOMContentLoaded', () => {
-            // ตรวจสอบสถานะการล็อกอิน ถ้ายังไม่ล็อกอินให้พากลับไปหน้า Login
-            if (sessionStorage.getItem('isLoggedIn') !== 'true') {
-                document.getElementById('loading').classList.remove('hidden');
-                document.querySelector('#loading p').innerText = 'กรุณาเข้าสู่ระบบ...';
-                
-                if (typeof google !== 'undefined') {
-                    google.script.run.withSuccessHandler(function(url) {
-                        window.top.location.href = url + '?page=Login';
-                    }).getWebAppUrl();
-                }
-                return; // หยุดการทำงานส่วนอื่น
-            }
+        function initApp(userName, role) {
+            document.getElementById('display-userName').innerText = userName || 'User';
+            document.getElementById('display-userRole').innerText = role || 'User';
             
-            // เซ็ตชื่อผู้ใช้และสิทธิ์ที่ Header
-            const userName = sessionStorage.getItem('userName') || 'User';
-            const role = sessionStorage.getItem('userRole') || 'User';
-            document.getElementById('display-userName').innerText = userName;
-            document.getElementById('display-userRole').innerText = role;
-            
-            // ตรวจสอบสิทธิ์การจัดการข้อมูล Owner
             if (role === 'System Admin' || role === 'Admin') {
                 canViewOwner = true;
-                // แสดง Section ในฟอร์มเพิ่ม/แก้ไข
                 document.getElementById('owner-section').classList.remove('hidden');
             }
 
-            // แสดงปุ่มจัดการผู้ใช้งาน หากสิทธิ์เป็น System Admin
             if (role === 'System Admin') {
                 document.getElementById('btn-manage-users').classList.remove('hidden');
             }
             
-            // ถ้าระบบจำได้ว่าล็อกอินแล้ว ค่อยดึงข้อมูลมาแสดง
             loadData();
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            const activeToken = SERVER_TOKEN || (function(){ try{ return sessionStorage.getItem('token'); }catch(e){ return ''; } })();
+            
+            if (activeToken) {
+                // Verify with backend if token exists
+                if (typeof google !== 'undefined') {
+                    google.script.run.withSuccessHandler(function(userData) {
+                        if (userData) {
+                            try {
+                                sessionStorage.setItem('isLoggedIn', 'true');
+                                sessionStorage.setItem('userName', userData.name);
+                                sessionStorage.setItem('userRole', userData.role);
+                                sessionStorage.setItem('username', userData.username);
+                                sessionStorage.setItem('token', activeToken);
+                            } catch(e) {}
+                            initApp(userData.name, userData.role);
+                        } else {
+                            goLogin();
+                        }
+                    }).getUserFromToken(activeToken);
+                }
+            } else {
+                let loggedIn = false;
+                try { loggedIn = sessionStorage.getItem('isLoggedIn') === 'true'; } catch(e){}
+                if (loggedIn) {
+                    try {
+                        initApp(sessionStorage.getItem('userName'), sessionStorage.getItem('userRole'));
+                    } catch(e) { goLogin(); }
+                } else {
+                    goLogin();
+                }
+            }
         });
+
+        function goLogin() {
+            document.getElementById('loading').classList.remove('hidden');
+            document.querySelector('#loading p').innerText = 'กรุณาเข้าสู่ระบบ...';
+            if (typeof google !== 'undefined') {
+                google.script.run.withSuccessHandler(function(url) {
+                    window.open(url + '?page=Login', '_top');
+                }).getWebAppUrl();
+            }
+        }
 
         // ฟังก์ชันไปหน้าจัดการผู้ใช้งาน
         function goUserManagement() {
@@ -587,9 +612,10 @@
             document.getElementById('main-content').classList.add('hidden');
             document.querySelector('#loading p').innerText = 'กำลังเปิดหน้าระบบจัดการ...';
             
+            const activeToken = SERVER_TOKEN || (function(){ try{ return sessionStorage.getItem('token'); }catch(e){ return ''; } })();
             if (typeof google !== 'undefined') {
                 google.script.run.withSuccessHandler(function(url) {
-                    window.top.location.href = url + '?page=UserManagement';
+                    window.open(url + '?page=UserManagement' + (activeToken ? '&token=' + activeToken : ''), '_top');
                 }).getWebAppUrl();
             }
         }
@@ -607,9 +633,12 @@
                 cancelButtonText: 'ยกเลิก'
             }).then((result) => {
                 if (result.isConfirmed) {
-                    sessionStorage.removeItem('isLoggedIn');
-                    sessionStorage.removeItem('userName');
-                    sessionStorage.removeItem('userRole');
+                    try {
+                        sessionStorage.removeItem('isLoggedIn');
+                        sessionStorage.removeItem('userName');
+                        sessionStorage.removeItem('userRole');
+                        sessionStorage.removeItem('token');
+                    } catch(e) {}
                     
                     document.getElementById('loading').classList.remove('hidden');
                     document.getElementById('main-content').classList.add('hidden');
@@ -617,7 +646,7 @@
                     
                     if (typeof google !== 'undefined') {
                         google.script.run.withSuccessHandler(function(url) {
-                            window.top.location.href = url + '?page=Login';
+                            window.open(url + '?page=Login', '_top');
                         }).getWebAppUrl();
                     } else {
                         location.reload();
