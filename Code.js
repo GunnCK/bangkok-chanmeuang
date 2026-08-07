@@ -188,7 +188,7 @@ function logAndGetOwnerViews(bcCode, username, name) {
     const data = sheet.getDataRange().getValues();
     let logs = [];
     for (let i = 1; i < data.length; i++) {
-      if (data[i][0] === bcCode) {
+      if (data[i][0].toString() === bcCode.toString()) {
         logs.push({
           name: data[i][2],
           date: data[i][3] instanceof Date ? Utilities.formatDate(data[i][3], "Asia/Bangkok", "dd/MM/yyyy") : data[i][3],
@@ -214,13 +214,32 @@ function updateOwnerStatus(bcCode, username, status, remark) {
     if (!sheet) return [];
     
     const data = sheet.getDataRange().getValues();
+    let updated = false;
     for (let i = data.length - 1; i >= 1; i--) {
-      if (data[i][0] === bcCode && data[i][1] === username) {
+      if (data[i][0].toString() === bcCode.toString() && data[i][1].toString() === username.toString()) {
         sheet.getRange(i + 1, 6).setValue(status);
         sheet.getRange(i + 1, 7).setValue(remark);
+        updated = true;
         break;
       }
     }
+    
+    // ถ้าไม่เจอให้สร้าง row ใหม่ไปเลย
+    if (!updated) {
+      const now = new Date();
+      const dateStr = Utilities.formatDate(now, "Asia/Bangkok", "dd/MM/yyyy");
+      const timeStr = Utilities.formatDate(now, "Asia/Bangkok", "HH:mm:ss");
+      // หาชื่อผู้ใช้จาก Log ก่อนหน้า หรือใช้ชื่อ default
+      let name = username;
+      for (let i = data.length - 1; i >= 1; i--) {
+        if (data[i][1].toString() === username.toString()) {
+           name = data[i][2];
+           break;
+        }
+      }
+      sheet.appendRow([bcCode, username, name, dateStr, timeStr, status, remark]);
+    }
+    
     return logAndGetOwnerViews(bcCode, null, null);
   } catch(error) {
     return [{name: 'Error', date: '', time: error.toString(), status: '-', remark: '-'}];
