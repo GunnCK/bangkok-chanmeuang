@@ -114,7 +114,11 @@
             const currentToken = SERVER_TOKEN || sessionStorage.getItem('token') || '';
             if (typeof google !== 'undefined') {
                 google.script.run.withSuccessHandler(function(url) {
-                    window.open(url + '?page=UserManagement' + (currentToken ? '&token=' + currentToken : ''), '_top');
+                    var link = document.createElement('a');
+                    link.href = url + '?page=UserManagement' + (currentToken ? '&token=' + currentToken : '');
+                    link.target = '_top';
+                    document.body.appendChild(link);
+                    link.click();
                 }).getWebAppUrl();
             }
         }
@@ -166,10 +170,11 @@
                             Swal.fire({
                                 icon: 'success',
                                 title: 'เข้าสู่ระบบสำเร็จ',
-                                text: 'ยินดีต้อนรับคุณ ' + response.name,
+                                text: 'ยินดีต้อนรับคุณ ' + response.name + '\n(กรุณากดปุ่มเพื่อดำเนินการต่อ)',
                                 confirmButtonColor: '#b89247',
-                                timer: 1500,
-                                showConfirmButton: false,
+                                confirmButtonText: 'ตกลง',
+                                showConfirmButton: true,
+                                timer: 2500,
                                 background: '#ffffff',
                                 iconColor: '#b89247',
                                 customClass: {
@@ -180,12 +185,20 @@
                                 document.getElementById('loading').classList.remove('hidden');
                                 document.querySelector('#loading p').innerText = 'กำลังพาท่านเข้าสู่ระบบ...';
                                 
+                                function forceRedirect(url) {
+                                    var link = document.createElement('a');
+                                    link.href = url;
+                                    link.target = '_top';
+                                    document.body.appendChild(link);
+                                    link.click();
+                                }
+
                                 if (response.url) {
-                                    window.open(response.url + '?page=index' + (response.token ? '&token=' + response.token : ''), '_top');
+                                    forceRedirect(response.url + '?page=index' + (response.token ? '&token=' + response.token : ''));
                                 } else {
                                     // สำรองไว้กรณีเก่า
                                     google.script.run.withSuccessHandler(function(url) {
-                                        window.open(url + '?page=index' + (response.token ? '&token=' + response.token : ''), '_top');
+                                        forceRedirect(url + '?page=index' + (response.token ? '&token=' + response.token : ''));
                                     }).getWebAppUrl();
                                 }
                             });

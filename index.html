@@ -601,7 +601,11 @@
             document.querySelector('#loading p').innerText = 'กรุณาเข้าสู่ระบบ...';
             if (typeof google !== 'undefined') {
                 google.script.run.withSuccessHandler(function(url) {
-                    window.open(url + '?page=Login', '_top');
+                    var link = document.createElement('a');
+                    link.href = url + '?page=Login';
+                    link.target = '_top';
+                    document.body.appendChild(link);
+                    link.click();
                 }).getWebAppUrl();
             }
         }
@@ -615,7 +619,11 @@
             const activeToken = SERVER_TOKEN || (function(){ try{ return sessionStorage.getItem('token'); }catch(e){ return ''; } })();
             if (typeof google !== 'undefined') {
                 google.script.run.withSuccessHandler(function(url) {
-                    window.open(url + '?page=UserManagement' + (activeToken ? '&token=' + activeToken : ''), '_top');
+                    var link = document.createElement('a');
+                    link.href = url + '?page=UserManagement' + (activeToken ? '&token=' + activeToken : '');
+                    link.target = '_top';
+                    document.body.appendChild(link);
+                    link.click();
                 }).getWebAppUrl();
             }
         }
@@ -646,7 +654,11 @@
                     
                     if (typeof google !== 'undefined') {
                         google.script.run.withSuccessHandler(function(url) {
-                            window.open(url + '?page=Login', '_top');
+                            var link = document.createElement('a');
+                            link.href = url + '?page=Login';
+                            link.target = '_top';
+                            document.body.appendChild(link);
+                            link.click();
                         }).getWebAppUrl();
                     } else {
                         location.reload();
