@@ -738,6 +738,7 @@
             if (!window.currentOwnerBcCode) return;
             const status = document.getElementById('update-status').value;
             const remark = document.getElementById('update-remark').value;
+            const username = localStorage.getItem('username');
             
             if (!status && !remark) {
                 Swal.fire({icon: 'warning', title: 'แจ้งเตือน', text: 'กรุณาระบุสถานะหรือหมายเหตุ', confirmButtonColor: '#b89247'});
