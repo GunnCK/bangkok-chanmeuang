@@ -733,6 +733,29 @@
             }
 
             allData = data;
+            
+            // คำนวณสัญญาที่กำลังจะหมดอายุ
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+            allData.forEach(item => {
+                if (item.leaseEnd) {
+                    const leaseEndDate = new Date(item.leaseEnd);
+                    const diffTime = leaseEndDate.getTime() - today.getTime();
+                    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+                    
+                    if (diffDays >= 0 && diffDays <= 30) {
+                        item.isExpiring = true;
+                        item.daysLeft = diffDays;
+                    } else {
+                        item.isExpiring = false;
+                        item.daysLeft = null;
+                    }
+                } else {
+                    item.isExpiring = false;
+                    item.daysLeft = null;
+                }
+            });
+
             document.getElementById('total-records').innerText = allData.length;
             
             // ตรวจหาจำนวนรายการสัญญาทั้งหมดที่กำลังจะหมดอายุล่วงหน้าภายใน 1 เดือน (30 วัน)
