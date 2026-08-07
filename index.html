@@ -1180,6 +1180,12 @@
             document.getElementById('googleMap').value = item.googleMap;
             document.getElementById('remark').value = item.remark;
             
+            // ข้อมูลเจ้าของ (เพิ่มเพื่อไม่ให้ค่าว่างไปเซฟทับ)
+            document.getElementById('ownerName').value = item.ownerName || '';
+            document.getElementById('ownerPhone').value = item.ownerPhone || '';
+            document.getElementById('ownerLine').value = item.ownerLine || '';
+            document.getElementById('ownerFacebook').value = item.ownerFacebook || '';
+            
             // Checkbox สัตว์เลี้ยง
             document.getElementById('petFriendly').checked = (item.petFriendly === 'Yes');
 
