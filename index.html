@@ -502,7 +502,7 @@
                 </div>
                 <!-- Log section -->
                 <div class="mt-4 pt-4 border-t border-gray-200">
-                    <span class="block text-xs font-bold text-gray-400 uppercase tracking-wide mb-2">อัปเดตสถานะการติดต่อ</span>
+                    <span class="block text-xs font-bold text-gray-400 uppercase tracking-wide mb-2">อัปเดตสถานะการติดต่อ<span class="text-red-500">*</span></span>
                     <div class="flex gap-2 mb-4">
                         <select id="update-status" class="block w-2/5 rounded-md border-gray-300 shadow-sm focus:border-navy focus:ring-navy sm:text-sm text-sm">
                             <option value="">- สถานะ -</option>
@@ -742,8 +742,8 @@
             const remark = document.getElementById('update-remark').value;
             const username = sessionStorage.getItem('username');
             
-            if (!status && !remark) {
-                Swal.fire({icon: 'warning', title: 'แจ้งเตือน', text: 'กรุณาระบุสถานะหรือหมายเหตุ', confirmButtonColor: '#b89247'});
+            if (!status) {
+                Swal.fire({icon: 'warning', title: 'แจ้งเตือน', text: 'กรุณาระบุสถานะ', confirmButtonColor: '#b89247'});
                 return;
             }
 
