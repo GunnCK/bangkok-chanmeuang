@@ -505,7 +505,7 @@
                         <select id="update-status" class="block w-1/3 rounded-md border-gray-300 shadow-sm focus:border-navy focus:ring-navy sm:text-sm text-sm">
                             <option value="">- สถานะ -</option>
                             <option value="Available">Available</option>
-                            <option value="Misscall">Misscall</option>
+                            <option value="Miss called">Miss called</option>
                         </select>
                         <input type="text" id="update-remark" placeholder="หมายเหตุ..." class="block w-auto flex-grow rounded-md border-gray-300 shadow-sm focus:border-navy focus:ring-navy sm:text-sm text-sm">
                         <button type="button" onclick="submitOwnerUpdate()" id="btn-update-owner" class="bg-navy hover:bg-navy-light text-white px-3 py-1.5 rounded text-sm transition shadow-sm whitespace-nowrap"><i class="fa-solid fa-save"></i> บันทึก</button>
@@ -718,7 +718,7 @@
                 logs.forEach(log => {
                     let statusColor = "text-gray-700";
                     if(log.status === 'Available') statusColor = "text-green-600 font-bold";
-                    if(log.status === 'Misscall') statusColor = "text-red-500 font-bold";
+                    if(log.status === 'Miss called') statusColor = "text-red-500 font-bold";
 
                     logHtml += `<tr class="border-b border-gray-100">
                         <td class="py-1 text-xs text-gray-700">${log.name}</td>
