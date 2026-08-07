@@ -500,14 +500,26 @@
                 </div>
                 <!-- Log section -->
                 <div class="mt-4 pt-4 border-t border-gray-200">
+                    <span class="block text-xs font-bold text-gray-400 uppercase tracking-wide mb-2">อัปเดตสถานะการติดต่อ</span>
+                    <div class="flex gap-2 mb-4">
+                        <select id="update-status" class="block w-1/3 rounded-md border-gray-300 shadow-sm focus:border-navy focus:ring-navy sm:text-sm text-sm">
+                            <option value="">- สถานะ -</option>
+                            <option value="Available">Available</option>
+                            <option value="Misscall">Misscall</option>
+                        </select>
+                        <input type="text" id="update-remark" placeholder="หมายเหตุ..." class="block w-auto flex-grow rounded-md border-gray-300 shadow-sm focus:border-navy focus:ring-navy sm:text-sm text-sm">
+                        <button type="button" onclick="submitOwnerUpdate()" id="btn-update-owner" class="bg-navy hover:bg-navy-light text-white px-3 py-1.5 rounded text-sm transition shadow-sm whitespace-nowrap"><i class="fa-solid fa-save"></i> บันทึก</button>
+                    </div>
+
                     <span class="block text-xs font-bold text-gray-400 uppercase tracking-wide mb-2">ประวัติการเข้าชม</span>
                     <div class="max-h-32 overflow-y-auto">
                         <table class="w-full text-left">
                             <thead>
                                 <tr class="text-xs text-gray-500 border-b border-gray-200">
                                     <th class="pb-1 font-medium">Name</th>
-                                    <th class="pb-1 font-medium">วันที่</th>
-                                    <th class="pb-1 font-medium">เวลา</th>
+                                    <th class="pb-1 font-medium">วันที่/เวลา</th>
+                                    <th class="pb-1 font-medium">สถานะ</th>
+                                    <th class="pb-1 font-medium">หมายเหตุ</th>
                                 </tr>
                             </thead>
                             <tbody id="view-logTable">
@@ -686,25 +698,78 @@
                     
                     document.getElementById('owner-modal').classList.remove('hidden');
 
+                    document.getElementById('update-status').value = '';
+                    document.getElementById('update-remark').value = '';
+                    window.currentOwnerBcCode = item.no;
+
                     if (typeof google !== 'undefined') {
                         google.script.run.withSuccessHandler(function(logs) {
-                            let logHtml = '';
-                            if (logs && logs.length > 0) {
-                                logs.forEach(log => {
-                                    logHtml += `<tr class="border-b border-gray-100">
-                                        <td class="py-1 text-sm text-gray-700">${log.name}</td>
-                                        <td class="py-1 text-sm text-gray-600">${log.date}</td>
-                                        <td class="py-1 text-sm text-gray-600">${log.time}</td>
-                                    </tr>`;
-                                });
-                            } else {
-                                logHtml = '<tr><td colspan="3" class="text-center text-sm text-gray-500 py-2">ยังไม่มีประวัติการเข้าชม</td></tr>';
-                            }
-                            document.getElementById('view-logTable').innerHTML = logHtml;
+                            renderLogsTable(logs);
                         }).logAndGetOwnerViews(item.no, username, userName);
                     }
                 }
             });
+        }
+
+        // ฟังก์ชันวาดตารางประวัติการเข้าชม
+        function renderLogsTable(logs) {
+            let logHtml = '';
+            if (logs && logs.length > 0) {
+                logs.forEach(log => {
+                    let statusColor = "text-gray-700";
+                    if(log.status === 'Available') statusColor = "text-green-600 font-bold";
+                    if(log.status === 'Misscall') statusColor = "text-red-500 font-bold";
+
+                    logHtml += `<tr class="border-b border-gray-100">
+                        <td class="py-1 text-xs text-gray-700">${log.name}</td>
+                        <td class="py-1 text-xs text-gray-600">${log.date} ${log.time}</td>
+                        <td class="py-1 text-xs ${statusColor}">${log.status}</td>
+                        <td class="py-1 text-xs text-gray-600 truncate max-w-[80px]" title="${log.remark}">${log.remark}</td>
+                    </tr>`;
+                });
+            } else {
+                logHtml = '<tr><td colspan="4" class="text-center text-sm text-gray-500 py-2">ยังไม่มีประวัติการเข้าชม</td></tr>';
+            }
+            document.getElementById('view-logTable').innerHTML = logHtml;
+        }
+
+        // ฟังก์ชันอัปเดตสถานะและหมายเหตุของประวัติการเข้าชม
+        function submitOwnerUpdate() {
+            if (!window.currentOwnerBcCode) return;
+            const status = document.getElementById('update-status').value;
+            const remark = document.getElementById('update-remark').value;
+            
+            if (!status && !remark) {
+                Swal.fire({icon: 'warning', title: 'แจ้งเตือน', text: 'กรุณาระบุสถานะหรือหมายเหตุ', confirmButtonColor: '#b89247'});
+                return;
+            }
+
+            const btn = document.getElementById('btn-update-owner');
+            btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i>';
+            btn.disabled = true;
+
+            if (typeof google !== 'undefined') {
+                google.script.run.withSuccessHandler(function(logs) {
+                    btn.innerHTML = '<i class="fa-solid fa-save"></i> บันทึก';
+                    btn.disabled = false;
+                    document.getElementById('update-status').value = '';
+                    document.getElementById('update-remark').value = '';
+                    renderLogsTable(logs);
+                    
+                    Swal.fire({
+                        toast: true,
+                        position: 'top-end',
+                        icon: 'success',
+                        title: 'อัปเดตสถานะสำเร็จ',
+                        showConfirmButton: false,
+                        timer: 1500
+                    });
+                }).withFailureHandler(function(err) {
+                    btn.innerHTML = '<i class="fa-solid fa-save"></i> บันทึก';
+                    btn.disabled = false;
+                    showError(err);
+                }).updateOwnerStatus(window.currentOwnerBcCode, username, status, remark);
+            }
         }
 
         // ปิดหน้าต่างดูข้อมูลเจ้าของ

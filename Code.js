@@ -161,18 +161,28 @@ function logAndGetOwnerViews(bcCode, username, name) {
     // ถ้ายังไม่มี Sheet 'Log' ให้สร้างขึ้นมาใหม่
     if (!sheet) {
       sheet = ss.insertSheet('Log');
-      const headers = ["รหัส BC", "Username", "Name", "วันที่", "เวลา"];
+      const headers = ["รหัส BC", "Username", "Name", "วันที่", "เวลา", "สถานะ", "หมายเหตุ"];
       sheet.getRange(1, 1, 1, headers.length).setValues([headers]);
       sheet.getRange("1:1").setFontWeight("bold").setBackground("#e2e8f0");
+    } else {
+      // ตรวจสอบว่ามีคอลัมน์ สถานะ และ หมายเหตุ หรือไม่ (กรณีมี Sheet เดิมอยู่แล้ว)
+      const headers = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0];
+      if (headers.length < 7) {
+        sheet.getRange(1, 6).setValue("สถานะ");
+        sheet.getRange(1, 7).setValue("หมายเหตุ");
+        sheet.getRange("1:1").setFontWeight("bold").setBackground("#e2e8f0");
+      }
     }
     
-    const now = new Date();
-    // แปลงวันที่และเวลาให้อยู่ในรูปแบบที่อ่านง่ายตาม Timezone ประเทศไทย
-    const dateStr = Utilities.formatDate(now, "Asia/Bangkok", "dd/MM/yyyy");
-    const timeStr = Utilities.formatDate(now, "Asia/Bangkok", "HH:mm:ss");
-    
-    // บันทึก log ใหม่
-    sheet.appendRow([bcCode, username, name, dateStr, timeStr]);
+    if (username && name) {
+      const now = new Date();
+      // แปลงวันที่และเวลาให้อยู่ในรูปแบบที่อ่านง่ายตาม Timezone ประเทศไทย
+      const dateStr = Utilities.formatDate(now, "Asia/Bangkok", "dd/MM/yyyy");
+      const timeStr = Utilities.formatDate(now, "Asia/Bangkok", "HH:mm:ss");
+      
+      // บันทึก log ใหม่
+      sheet.appendRow([bcCode, username, name, dateStr, timeStr, "", ""]);
+    }
     
     // อ่านข้อมูล log ทั้งหมดที่ตรงกับรหัสทรัพย์นี้
     const data = sheet.getDataRange().getValues();
@@ -182,7 +192,9 @@ function logAndGetOwnerViews(bcCode, username, name) {
         logs.push({
           name: data[i][2],
           date: data[i][3] instanceof Date ? Utilities.formatDate(data[i][3], "Asia/Bangkok", "dd/MM/yyyy") : data[i][3],
-          time: data[i][4] instanceof Date ? Utilities.formatDate(data[i][4], "Asia/Bangkok", "HH:mm:ss") : data[i][4]
+          time: data[i][4] instanceof Date ? Utilities.formatDate(data[i][4], "Asia/Bangkok", "HH:mm:ss") : data[i][4],
+          status: data[i][5] || '-',
+          remark: data[i][6] || '-'
         });
       }
     }
@@ -190,6 +202,27 @@ function logAndGetOwnerViews(bcCode, username, name) {
     // แสดง log ล่าสุดอยู่ด้านบน
     return logs.reverse();
   } catch (error) {
-    return [{name: 'Error', date: '', time: error.toString()}];
+    return [{name: 'Error', date: '', time: error.toString(), status: '-', remark: '-'}];
+  }
+}
+
+// ฟังก์ชันสำหรับอัปเดตสถานะและหมายเหตุใน Log ล่าสุดของ User นั้นๆ
+function updateOwnerStatus(bcCode, username, status, remark) {
+  try {
+    const ss = SpreadsheetApp.openById(SHEET_ID);
+    let sheet = ss.getSheetByName('Log');
+    if (!sheet) return [];
+    
+    const data = sheet.getDataRange().getValues();
+    for (let i = data.length - 1; i >= 1; i--) {
+      if (data[i][0] === bcCode && data[i][1] === username) {
+        sheet.getRange(i + 1, 6).setValue(status);
+        sheet.getRange(i + 1, 7).setValue(remark);
+        break;
+      }
+    }
+    return logAndGetOwnerViews(bcCode, null, null);
+  } catch(error) {
+    return [{name: 'Error', date: '', time: error.toString(), status: '-', remark: '-'}];
   }
 }
