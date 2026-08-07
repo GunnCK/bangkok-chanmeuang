@@ -703,6 +703,7 @@
                     document.getElementById('update-status').value = '';
                     document.getElementById('update-remark').value = '';
                     window.currentOwnerBcCode = item.no;
+                    window.hasUpdatedOwnerStatus = false;
 
                     if (typeof google !== 'undefined') {
                         google.script.run.withSuccessHandler(function(logs) {
@@ -758,6 +759,7 @@
                     document.getElementById('update-status').value = '';
                     document.getElementById('update-remark').value = '';
                     renderLogsTable(logs);
+                    window.hasUpdatedOwnerStatus = true;
                     
                     Swal.fire({
                         toast: true,
@@ -777,6 +779,10 @@
 
         // ปิดหน้าต่างดูข้อมูลเจ้าของ
         function closeOwnerModal() {
+            if (window.currentOwnerBcCode && !window.hasUpdatedOwnerStatus) {
+                Swal.fire({icon: 'warning', title: 'แจ้งเตือน', text: 'กรุณาอัปเดตสถานะการติดต่อและกดบันทึกก่อนปิดหน้าต่างนี้', confirmButtonColor: '#b89247'});
+                return;
+            }
             document.getElementById('owner-modal').classList.add('hidden');
         }
 
