@@ -34,22 +34,28 @@ A comprehensive, serverless web application designed to manage real estate and c
 ## 📸 Screenshots
 
 - **Login Page**
-  ![Login Page](login.png)
+  ![Login Page](Image/login.png)
 
 - **Main Dashboard & Filter System**
-  ![Main Dashboard 1](dashboard1.png)
+  ![Main Dashboard 1](Image/dashboard1.png)
 
 - **Property Listings Overview**
-  ![Main Dashboard 2](dashboard2.png)
+  ![Main Dashboard 2](Image/dashboard2.png)
+
+- **Additional Dashboard View 1**
+  ![Main Dashboard 3](Image/dashboard3.png)
+
+- **Additional Dashboard View 2**
+  ![Main Dashboard 4](Image/dashboard4.png)
 
 - **Add Property Modal**
-  ![Add Property Modal](model_add.png)
+  ![Add Property Modal](Image/model_add.png)
 
 - **Edit Property Modal**
-  ![Edit Property Modal](model_edit.png)
+  ![Edit Property Modal](Image/model_edit.png)
 
 - **User Management Interface**
-  ![User Management Interface](user.png)
+  ![User Management Interface](Image/user.png)
 
 ## ⚙️ Setup & Installation (Local Development)
 
