@@ -188,7 +188,7 @@ function logAndGetOwnerViews(bcCode, username, name) {
     const data = sheet.getDataRange().getValues();
     let logs = [];
     for (let i = 1; i < data.length; i++) {
-      if (data[i][0].toString() === bcCode.toString()) {
+      if (String(data[i][0]) === String(bcCode)) {
         logs.push({
           name: data[i][2],
           date: data[i][3] instanceof Date ? Utilities.formatDate(data[i][3], "Asia/Bangkok", "dd/MM/yyyy") : data[i][3],
@@ -216,7 +216,7 @@ function updateOwnerStatus(bcCode, username, status, remark) {
     const data = sheet.getDataRange().getValues();
     let updated = false;
     for (let i = data.length - 1; i >= 1; i--) {
-      if (data[i][0].toString() === bcCode.toString() && data[i][1].toString() === username.toString()) {
+      if (String(data[i][0]) === String(bcCode) && String(data[i][1]) === String(username)) {
         sheet.getRange(i + 1, 6).setValue(status);
         sheet.getRange(i + 1, 7).setValue(remark);
         updated = true;
@@ -232,7 +232,7 @@ function updateOwnerStatus(bcCode, username, status, remark) {
       // หาชื่อผู้ใช้จาก Log ก่อนหน้า หรือใช้ชื่อ default
       let name = username;
       for (let i = data.length - 1; i >= 1; i--) {
-        if (data[i][1].toString() === username.toString()) {
+        if (String(data[i][1]) === String(username)) {
            name = data[i][2];
            break;
         }
