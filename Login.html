@@ -163,35 +163,28 @@
                                 // ปล่อยผ่านไปได้เลย เพราะเราส่งข้อมูลผ่าน Token ทาง URL แทนแล้ว
                             }
                             
-                            Swal.fire({
-                                icon: 'success',
-                                title: 'เข้าสู่ระบบสำเร็จ',
-                                text: 'ยินดีต้อนรับคุณ ' + response.name,
-                                showConfirmButton: false,
-                                timer: 1200,
-                                background: '#ffffff',
-                                iconColor: '#b89247',
-                                customClass: {
-                                    title: 'text-navy font-bold'
-                                }
-                            }).then(() => {
-                                // เปลี่ยนหน้าจอไปยังระบบหลัก (index.html) ผ่านการแนบ parameter ไปกับ URL
-                                document.getElementById('loading').classList.remove('hidden');
-                                document.querySelector('#loading p').innerText = 'กำลังพาท่านเข้าสู่ระบบ...';
-                                
-                                function forceRedirect(url) {
-                                    window.top.location.href = url;
-                                }
+                            document.getElementById('loading').classList.remove('hidden');
+                            document.querySelector('#loading p').innerText = 'เข้าสู่ระบบสำเร็จ กำลังเข้าสู่ระบบ...';
 
-                                if (response.url) {
-                                    forceRedirect(response.url + '?page=index' + (response.token ? '&token=' + response.token : ''));
-                                } else {
-                                    // สำรองไว้กรณีเก่า
-                                    google.script.run.withSuccessHandler(function(url) {
-                                        forceRedirect(url + '?page=index' + (response.token ? '&token=' + response.token : ''));
-                                    }).getWebAppUrl();
+                            function forceRedirect(url) {
+                                try {
+                                    window.top.location.href = url;
+                                } catch (e) {
+                                    var link = document.createElement('a');
+                                    link.href = url;
+                                    link.target = '_top';
+                                    document.body.appendChild(link);
+                                    link.click();
                                 }
-                            });
+                            }
+
+                            if (response.url) {
+                                forceRedirect(response.url + '?page=index' + (response.token ? '&token=' + response.token : ''));
+                            } else {
+                                google.script.run.withSuccessHandler(function(url) {
+                                    forceRedirect(url + '?page=index' + (response.token ? '&token=' + response.token : ''));
+                                }).getWebAppUrl();
+                            }
                         } else {
                             Swal.fire({
                                 icon: 'error',
