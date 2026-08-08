@@ -114,11 +114,7 @@
             const currentToken = SERVER_TOKEN || sessionStorage.getItem('token') || '';
             if (typeof google !== 'undefined') {
                 google.script.run.withSuccessHandler(function(url) {
-                    var link = document.createElement('a');
-                    link.href = url + '?page=UserManagement' + (currentToken ? '&token=' + currentToken : '');
-                    link.target = '_top';
-                    document.body.appendChild(link);
-                    link.click();
+                    window.top.location.href = url + '?page=UserManagement' + (currentToken ? '&token=' + currentToken : '');
                 }).getWebAppUrl();
             }
         }
@@ -184,11 +180,7 @@
                                 document.querySelector('#loading p').innerText = 'กำลังพาท่านเข้าสู่ระบบ...';
                                 
                                 function forceRedirect(url) {
-                                    var link = document.createElement('a');
-                                    link.href = url;
-                                    link.target = '_top';
-                                    document.body.appendChild(link);
-                                    link.click();
+                                    window.top.location.href = url;
                                 }
 
                                 if (response.url) {
