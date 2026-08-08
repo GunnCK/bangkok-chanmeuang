@@ -314,8 +314,11 @@
                         </div>
                         <div>
                             <label class="block text-sm font-medium text-gray-700 mb-1">คอนโด<span class="text-red-500">*</span></label>
-                            <input type="text" id="condo" name="condo" list="dl-condo" placeholder="ชื่อคอนโด..." required class="w-full border border-gray-300 rounded-lg p-2 focus:ring-2 focus:ring-blue-500 outline-none">
-                            <datalist id="dl-condo"></datalist>
+                            <select id="condo-select" onchange="handleCondoSelect(this)" class="w-full border border-gray-300 rounded-lg p-2 mb-2 focus:ring-2 focus:ring-blue-500 outline-none bg-white">
+                                <option value="">- เลือกคอนโด -</option>
+                                <option value="_new_" class="font-bold text-navy">+ พิมพ์ชื่อคอนโดใหม่...</option>
+                            </select>
+                            <input type="text" id="condo" name="condo" placeholder="ชื่อคอนโดใหม่..." required class="hidden w-full border border-gray-300 rounded-lg p-2 focus:ring-2 focus:ring-blue-500 outline-none">
                         </div>
                         <div>
                             <label class="block text-sm font-medium text-gray-700 mb-1">ประเภทห้อง</label>
@@ -900,16 +903,31 @@
             document.getElementById('main-content').classList.remove('hidden');
         }
 
+        // จัดการเมื่อเลือกคอนโดจาก Dropdown
+        function handleCondoSelect(selectElem) {
+            const input = document.getElementById('condo');
+            if (selectElem.value === '_new_') {
+                input.classList.remove('hidden');
+                input.value = '';
+                input.focus();
+            } else {
+                input.classList.add('hidden');
+                input.value = selectElem.value;
+            }
+        }
+
         // เพิ่มคำแนะนำในช่องพิมพ์คีย์บอร์ดของช่อง คอนโด และรหัสทรัพย์
         function populateDatalists() {
-            const dlNo = document.getElementById('dl-no');
-            const dlCondo = document.getElementById('dl-condo');
+            const selectCondo = document.getElementById('condo-select');
             
-            let nos = [...new Set(allData.map(item => item.no).filter(Boolean))];
-            let condos = [...new Set(allData.map(item => item.condo).filter(Boolean))];
+            let condos = [...new Set(allData.map(item => item.condo).filter(Boolean))].sort();
             
-            dlNo.innerHTML = nos.map(n => `<option value="${n}"></option>`).join('');
-            dlCondo.innerHTML = condos.map(c => `<option value="${c}"></option>`).join('');
+            let html = '<option value="">- เลือกคอนโด -</option>';
+            html += '<option value="_new_" class="font-bold text-navy">+ พิมพ์ชื่อคอนโดใหม่...</option>';
+            condos.forEach(c => {
+                html += `<option value="${c}">${c}</option>`;
+            });
+            if(selectCondo) selectCondo.innerHTML = html;
         }
 
         // ฟังก์ชันประมวลผลตัวกรอง/การค้นหาของระบบ
@@ -1181,6 +1199,15 @@
 
             if(mode === 'add') {
                 document.getElementById('modal-title').innerText = 'เพิ่มข้อมูล Condo ใหม่';
+                const selectCondo = document.getElementById('condo-select');
+                const inputCondo = document.getElementById('condo');
+                if(selectCondo) {
+                    selectCondo.value = '';
+                    selectCondo.classList.remove('hidden');
+                }
+                if(inputCondo) {
+                    inputCondo.classList.add('hidden');
+                }
             }
             document.getElementById('form-modal').classList.remove('hidden');
         }
@@ -1198,7 +1225,24 @@
             document.getElementById('rowIndex').value = item.rowIndex;
             document.getElementById('no').value = item.no;
             document.getElementById('propertyType').value = item.propertyType || '';
-            document.getElementById('condo').value = item.condo;
+            
+            const selectCondo = document.getElementById('condo-select');
+            const inputCondo = document.getElementById('condo');
+            inputCondo.value = item.condo;
+            
+            if(selectCondo) {
+                let optionExists = Array.from(selectCondo.options).some(opt => opt.value === item.condo);
+                if (optionExists) {
+                    selectCondo.value = item.condo;
+                    selectCondo.classList.remove('hidden');
+                    inputCondo.classList.add('hidden');
+                } else {
+                    selectCondo.value = '_new_';
+                    selectCondo.classList.add('hidden');
+                    inputCondo.classList.remove('hidden');
+                }
+            }
+            
             document.getElementById('roomType').value = item.roomType;
             document.getElementById('building').value = item.building;
             document.getElementById('floor').value = item.floor;
