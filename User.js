@@ -149,9 +149,19 @@ function saveUserData(userObj) {
     
     if (!sheet) return { status: 'error', message: "ไม่พบฐานข้อมูลผู้ใช้งาน" };
 
+    const data = sheet.getDataRange().getValues();
+
     if (userObj.rowIndex) {
       // โหมดแก้ไข
       const rowIndex = parseInt(userObj.rowIndex);
+      
+      // เช็คว่า Username ซ้ำไหม (ยกเว้นแถวที่กำลังแก้ไข)
+      for (let i = 1; i < data.length; i++) {
+        if ((i + 1) !== rowIndex && data[i][0] == userObj.username) {
+          return { status: 'error', message: "Username นี้มีในระบบแล้ว" };
+        }
+      }
+      
       const existingData = sheet.getRange(rowIndex, 1, 1, 6).getValues()[0];
       
       // ถ้าไม่มีการส่ง Password มาแปลว่าไม่ต้องการเปลี่ยนรหัสผ่าน ให้ใช้ค่าเดิมใน Sheet
@@ -170,7 +180,6 @@ function saveUserData(userObj) {
     } else {
       // โหมดเพิ่มใหม่
       // เช็คว่า Username ซ้ำไหมก่อนเพิ่มใหม่
-      const data = sheet.getDataRange().getValues();
       for (let i = 1; i < data.length; i++) {
         if (data[i][0] == userObj.username) {
           return { status: 'error', message: "Username นี้มีในระบบแล้ว" };

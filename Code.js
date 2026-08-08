@@ -90,8 +90,27 @@ function saveData(formObj) {
     const ss = SpreadsheetApp.openById(SHEET_ID);
     const sheet = ss.getSheetByName(SHEET_NAME);
     
+    let propertyNo = formObj.no;
+    
+    // หากเป็นโหมดเพิ่มใหม่ (ไม่มี rowIndex) ให้รันเลขรหัสทรัพย์ใหม่แบบออโต้
+    if (!formObj.rowIndex) {
+      const data = sheet.getDataRange().getValues();
+      let maxNo = 0;
+      for (let i = 1; i < data.length; i++) {
+        const currentNoStr = String(data[i][0]).trim();
+        if (currentNoStr && currentNoStr.toUpperCase().startsWith('BC-')) {
+          const numPart = parseInt(currentNoStr.substring(3), 10);
+          if (!isNaN(numPart) && numPart > maxNo) {
+            maxNo = numPart;
+          }
+        }
+      }
+      maxNo++;
+      propertyNo = 'BC-' + String(maxNo).padStart(3, '0');
+    }
+    
     const rowData = [
-      formObj.no,
+      propertyNo,
       formObj.condo,
       formObj.roomType,
       formObj.building,
@@ -168,11 +187,18 @@ function logAndGetOwnerViews(bcCode, username, name) {
       sheet.getRange("1:1").setFontWeight("bold").setBackground("#e2e8f0");
     } else {
       // ตรวจสอบว่ามีคอลัมน์ สถานะ และ หมายเหตุ หรือไม่ (กรณีมี Sheet เดิมอยู่แล้ว)
-      const headers = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0];
-      if (headers.length < 7) {
-        sheet.getRange(1, 6).setValue("สถานะ");
-        sheet.getRange(1, 7).setValue("หมายเหตุ");
+      const lastCol = sheet.getLastColumn();
+      if (lastCol === 0) {
+        const headers = ["รหัส BC", "Username", "Name", "วันที่", "เวลา", "สถานะ", "หมายเหตุ"];
+        sheet.getRange(1, 1, 1, headers.length).setValues([headers]);
         sheet.getRange("1:1").setFontWeight("bold").setBackground("#e2e8f0");
+      } else {
+        const headers = sheet.getRange(1, 1, 1, lastCol).getValues()[0];
+        if (headers.length < 7) {
+          sheet.getRange(1, 6).setValue("สถานะ");
+          sheet.getRange(1, 7).setValue("หมายเหตุ");
+          sheet.getRange("1:1").setFontWeight("bold").setBackground("#e2e8f0");
+        }
       }
     }
     
